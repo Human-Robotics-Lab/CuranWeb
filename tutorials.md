@@ -14,7 +14,7 @@ Once you have understood the layout of the curan project we are ready to dwelve 
 * Optimization : [Optimization](#optimization)
 * Communication : [Communication](#communication)
 * Image Processing : [Image Processing](#image-processing)
-
+* Building Complex Programs : [Complex Programs](#complex-programs)
 ### Utilities
 
 The utilities library is contained in the Curan API is located in the library folders in the utils folder. In CMAKE the target of the library is 'utils' and tu use it you can define a CMakeLists.txt with the following content 
@@ -851,7 +851,7 @@ communication
 
 This automatically links against the necessary third_party libraries as needed. Now lets go and look into some code. As you have already seen we have emplyed threads throught the previous examples, and we went to great lenghts to guarantee  that we wait for threadsafe flags, as in the chapter [Utilities](#utilities). Now we will employ a similar tought process. The library which we base ourselfs on is called ASIO (Asyncrounous Input and Output). This is one of the great marvels of C++ in my opinion. 
 
-Asio works based on a very important object, the 'asio::io_context'. This object is used to syncronize communcation calls and so much more that I cannot describe all the ways in which is used. In curan, to simplify your life while trying to use custom procotols we designed a class 
+Asio works based on a very important object, the 'asio::io_context'. This object is used to syncronize communcation calls and so much more that I cannot describe all the ways in which is used. In curan, to simplify your life while trying to use custom procotols we designed a class which is 
 
 ```cpp
 int main() {
@@ -883,3 +883,6 @@ return 0;
 
 This portion is still in development... TODO
 
+### Complex-Programs
+
+This portion is still in development... TODO
