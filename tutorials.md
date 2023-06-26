@@ -716,6 +716,7 @@ int main(int argc, char **argv) {
 
 This code adds objects to our scene asyncrounously, which means that we never block the entire scene while waiting for our object. The scene is now 
 <img src="assets/images/world_with_box.png" alt="world_with_box">
+![warning](assets/images/world_with_box.png)
 
 For a reference of objects that you can add to the scene look and the classes available inside the renderer library. There are two special objects which need a bit more attention. How to create a robot and how to create 
 
