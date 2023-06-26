@@ -657,6 +657,7 @@ int main(int argc, char **argv) {
 This source code will create an empty window which we can rotate and move.
 
 ![Book logo](./assets/images/empty_world.png)
+<img src="./assets/images/empty_world.png" alt="empty_world">
 
 The wired floor is automatically added to the scene to facilitate the visualization by inexperienced personell viewing our demos (simmilar to the background of blender). The code blocks once the window.run() method is called. Now assume that we add a function in a thread that goes to do something like waiting for a connection to be established and once this connection is established we want to add a sphere to the scene. This is how you would achieve this behavior.
 
