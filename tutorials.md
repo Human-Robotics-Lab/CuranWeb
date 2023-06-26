@@ -512,7 +512,7 @@ return 0;
 ```
 
 This is the result of all of our hard work
-![Book logo]({{site.baseurl}}/assets/images/buttons_container.png)
+![Book logo](CuranWeb/assets/images/buttons_container.png)
 
 Altough its a bit anoying that the lettering type is too small. Well no problem, in our Button::Info struct there is a field that controls the size of the font we are using to render our buttons, lets change that from 15 to 30 as follows
 
@@ -522,7 +522,7 @@ text_font.setEdging(SkFont::Edging::kAntiAlias);
 ```
 
 This results in the following 
-![Book logo]({{site.baseurl}}/assets/images/buttons_larger_letter_type.png)
+![Book logo](CuranWeb/assets/images/buttons_larger_letter_type.png)
 
 Now finaly we want to add the callback behavior to our window. This is done through a [lambda](https://en.cppreference.com/w/cpp/language/lambda) and [variants](https://en.cppreference.com/w/cpp/utility/variant). Lambdas are blocks of code which capture variables as desired and variants are a special safe kind of [unions](https://en.cppreference.com/w/c/language/union). Don't worry about the names, you just need to know how to implement the behavior you desire.
 
@@ -656,7 +656,7 @@ int main(int argc, char **argv) {
 
 This source code will create an empty window which we can rotate and move.
 
-![Book logo]({{site.baseurl}}/assets/images/empty_world.png)
+![Book logo](CuranWeb/assets/images/empty_world.png)
 
 The wired floor is automatically added to the scene to facilitate the visualization by inexperienced personell viewing our demos (simmilar to the background of blender). The code blocks once the window.run() method is called. Now assume that we add a function in a thread that goes to do something like waiting for a connection to be established and once this connection is established we want to add a sphere to the scene. This is how you would achieve this behavior.
 
@@ -716,7 +716,7 @@ int main(int argc, char **argv) {
 ```
 
 This code adds objects to our scene asyncrounously, which means that we never block the entire scene while waiting for our object. The scene is now 
-![Book logo]({{site.baseurl}}/assets/images/world_with_box.png)
+![Book logo](CuranWeb/assets/images/world_with_box.png)
 
 For a reference of objects that you can add to the scene look and the classes available inside the renderer library. There are two special objects which need a bit more attention. How to create a robot and how to create 
 
