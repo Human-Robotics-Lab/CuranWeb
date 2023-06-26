@@ -1,6 +1,8 @@
 ---
-layout: page
-title: About
+# Feel free to add content and custom Front Matter to this file.
+# To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
+
+layout: home
 ---
 
 Curan is a medical toolkit written in c++ which simplifies integration with third-party dependecies and provides solutions for your custom medical needs. 
