@@ -564,15 +564,69 @@ infor.callback = [](Button* slider,ConfigDraw* config) {
 std::shared_ptr<Button> button3 = Button::make(infor);
 ```
 
-With this you have the widget behavior you desire. Because the lambdas can capture anything if your imagination if powerfull you can create quite complex things.
+With this you have the widget behavior you desire. Because the lambdas can capture anything, if your imagination if powerfull, you can create quite complex systems.
 
 Now obviously there are more widgets which are usefull in this context. For example in the context of Curan, it is extremelly important to draw an image which we received from a peripheral at a constant framerate. To do this we developed the ImageDisplay class. Assume that you are testing an algorithm and just want to see how the image looks. Well for that we can define the ImageDisplay class and a single container which completly fills our Page as follows.
 
 ```cpp
-int main(){
+#define STB_IMAGE_IMPLEMENTATION
+#include "userinterface/widgets/ConfigDraw.h"
+#include "userinterface/Window.h"
+#include "userinterface/widgets/Page.h"
+#include "userinterface/widgets/IconResources.h"
+#include <iostream>
 
-    return 0;
+std::shared_ptr<curan::ui::Page> get_desired_page();
+
+int main() {
+try {
+	using namespace curan::ui;
+	std::unique_ptr<Context> context = std::make_unique<Context>();;
+	DisplayParams param{ std::move(context),1200,800 };
+	std::unique_ptr<Window> viewer = std::make_unique<Window>(std::move(param));
+
+	SkColor colbuton = { SK_ColorRED };
+
+	SkPaint paint_square;
+	paint_square.setStyle(SkPaint::kFill_Style);
+	paint_square.setAntiAlias(true);
+	paint_square.setStrokeWidth(4);
+	paint_square.setColor(colbuton);
+
+    //Things that we will add in the next portion of the tutorial
+
+	while (!glfwWindowShouldClose(viewer->window)) {
+			auto start = std::chrono::high_resolution_clock::now();
+			SkSurface* pointer_to_surface = viewer->getBackbufferSurface();
+			SkCanvas* canvas = pointer_to_surface->getCanvas();
+			canvas->drawColor(SK_ColorWHITE);
+			
+            //do your own things
+
+			glfwPollEvents();
+			auto signals = viewer->process_pending_signals();
+
+			bool val = viewer->swapBuffers();
+			if (!val)
+				std::cout << "failed to swap buffers\n";
+			auto end = std::chrono::high_resolution_clock::now();
+			std::this_thread::sleep_for(std::chrono::milliseconds(16) - std::chrono::duration_cast<std::chrono::milliseconds>(end - start));
+	}
+	return 0;
 }
+catch (...) {
+	std::cout << "Failed";
+	return 1;
+}
+}
+```
+
+Where get_desired_page is implemented as in 
+
+```cpp
+std::shared_ptr<curan::ui::Page> get_desired_page(){
+
+};
 ```
 
 Another important widget which is usefull is a slider. This is how you can obtain this behavior
