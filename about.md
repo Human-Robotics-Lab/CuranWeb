@@ -1,6 +1,7 @@
 ---
 layout: page
 title: About
+permalink: /about/
 ---
 
 Curan is a medical toolkit written in c++ which simplifies integration with third-party dependecies and provides solutions for your custom medical needs. 

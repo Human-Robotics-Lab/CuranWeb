@@ -1,6 +1,7 @@
 ---
 layout: "page"
 title: "Tutorials" 
+permalink: /tutorials/
 ---
 
 Once you have understood the layout of the curan project we are ready to dwelve deep into the curan API and how you can achieve your goals.
