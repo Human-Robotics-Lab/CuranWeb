@@ -21,6 +21,9 @@ On linux install the build essencial tools in your command line with : sudo apt-
 
 4. Install the Visual Studio Code IDE from [this website](assets/images/vulkan_studio_code.png) 
 
+5. On Windows open the special command line that is installed with visual studio 
+![native](assets/images/native_window.png)
+
 ## Understand the structure
 
 So you have found yourself in front of Curan and you have sucessefully compiled the Curan SDK without any errors. Now you have a goal in mind and want to start implementing your own custom solutions for your medical applications. Well, this tutorial introduces the base cases of the classes available to achieve your goals. 
