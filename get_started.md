@@ -24,7 +24,17 @@ On linux install the build essencial tools in your command line with : sudo apt-
 5. Open your Github Desktop application and download Curan into a local folder (use a short path, e.g. C:/Dev/Curan) in your machine
 [github desktop](assets/images/github_desktop.png) 
 
+6. Now that you have Curan on your machine you can open a command line, go to the folder where you installed curan and write, e.g. cd C:/Dev/Curan
+and write "code ." This will open the visual studio code and click that you trust the authors of this folder. Now go to the extensions inside visual studio and install the vcpkg extensions, the cmake extensions and the mycrosoft c++ extensions.
+[visual studio extensions](assets/images/visual_studio_extensions.png) 
 
+7. 
+
+8. 
+
+9. 
+
+10. 
 ## Understand the structure
 
 So you have found yourself in front of Curan and you have sucessefully compiled the Curan SDK without any errors. Now you have a goal in mind and want to start implementing your own custom solutions for your medical applications. Well, this tutorial introduces the base cases of the classes available to achieve your goals. 
