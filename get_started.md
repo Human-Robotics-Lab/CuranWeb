@@ -19,7 +19,7 @@ Once this step is complete make sure you have acess to the Curan source code on 
 ![visual studio community](assets/images/visual_studio_community.png)
 On linux install the build essencial tools in your command line with : sudo apt-get install build-essencials
 
-4. Install the visual studio code extension 
+4. Install the Visual Studio Code IDE from [this website](assets/images/vulkan_studio_code.png) 
 
 ## Understand the structure
 
