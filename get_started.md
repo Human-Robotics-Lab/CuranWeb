@@ -21,8 +21,9 @@ On linux install the build essencial tools in your command line with : sudo apt-
 
 4. Install the Visual Studio Code IDE from [this website](assets/images/vulkan_studio_code.png) 
 
-5. On Windows open the special command line that is installed with visual studio 
-![native](assets/images/native_window.png)
+5. Open your Github Desktop application and download Curan into a local folder (use a short path, e.g. C:/Dev/Curan) in your machine
+[github desktop](assets/images/github_desktop.png) 
+
 
 ## Understand the structure
 
