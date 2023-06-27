@@ -4,6 +4,23 @@ title: "Get started"
 permalink: "/get_started/"
 ---
 
+## Download and Set up
+
+Usually when developing code you want to have an integrated tool, such as visual studio or visual studio code to compile and provide you with Intelisense which facilitates your development process. This step will teach you how you can set up curan in your personal machine. 
+
+1. Download Github Desktop : for this step follow [these instructions](https://docs.github.com/en/desktop/installing-and-configuring-github-desktop/installing-and-authenticating-to-github-desktop/installing-github-desktop)
+
+Once this step is complete make sure you have acess to the Curan source code on [github](https://github.com/Human-Robotics-Lab/Curan/tree/main)
+
+2. Now you need to install the Vulkan SDK in your machine. Download the correct version from [this website](https://vulkan.lunarg.com/#new_tab)
+![vulkan website](assets/images/vulkan_sdk.png)
+
+3. On windows install visual studio community edition with all the C++ compilers and Cmake tools
+![visual studio community](assets/images/visual_studio_community.png)
+On linux install the build essencial tools in your command line with : sudo apt-get install build-essencials
+
+4. Install the visual studio code extension 
+
 ## Understand the structure
 
 So you have found yourself in front of Curan and you have sucessefully compiled the Curan SDK without any errors. Now you have a goal in mind and want to start implementing your own custom solutions for your medical applications. Well, this tutorial introduces the base cases of the classes available to achieve your goals. 
