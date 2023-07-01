@@ -22,13 +22,13 @@ On linux install the build essencial tools in your command line with : sudo apt-
 4. Install the Visual Studio Code IDE from [this website](assets/images/vulkan_studio_code.png) 
 
 5. Open your Github Desktop application and download Curan into a local folder (use a short path, e.g. C:/Dev/Curan) in your machine
-[github desktop](assets/images/github_desktop.png) 
+![github desktop](assets/images/github_desktop.png) 
 
 6. Now that you have Curan on your machine you can open a command line, go to the folder where you installed curan and write, e.g. cd C:/Dev/Curan
 and write "code ." This will open the visual studio code and click that you trust the authors of this folder. Now go to the extensions inside visual studio and install the vcpkg extensions, the cmake extensions and the mycrosoft c++ extensions.
-[visual studio extensions](assets/images/visual_studio_extensions.png) 
+![visual studio extensions](assets/images/visual_studio_extensions.png) 
 
-7. 
+7. Enable all extensions. Now if you go back to your folder in visual studio. There should be a file in the root directory of your project called .vscode with a settings.json description of the build configuration of the project. 
 
 8. 
 
