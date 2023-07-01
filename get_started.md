@@ -28,13 +28,61 @@ On linux install the build essencial tools in your command line with : sudo apt-
 and write "code ." This will open the visual studio code and click that you trust the authors of this folder. Now go to the extensions inside visual studio and install the vcpkg extensions, the cmake extensions and the mycrosoft c++ extensions.
 ![visual studio extensions](assets/images/visual_studio_extensions.png) 
 
-7. Enable all extensions. Now if you go back to your folder in visual studio. There should be a file in the root directory of your project called .vscode with a settings.json description of the build configuration of the project. 
+7. Enable all extensions. Now if you go back to your folder in visual studio. There should be a file in the root directory of your project called .vscode with a settings.json description of the build configuration of the project as shown in the 
+![image of vscode root path](assets/images/visual_studio_extensions.png) 
 
-8. 
+8. Now that the file has been generated we are almost done with the configuration of the project. You need to change the following properties, (If on Windows)
+```json
+{
+    "cmake.generator": "Ninja",
+    "cmake.configureArgs": [
+        "-DVCPKG_APPLOCAL_DEPS=ON",
+        "-DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON",
+        "-DVCPKG_MANIFEST_MODE=ON",
+        "-DVCPKG_TARGET_TRIPLET=x64-windows-static"
+    ],
+    "vcpkg.general.enable": true,
+    "vcpkg.target.hostTriplet": "x64-windows-static",
+    "vcpkg.target.defaultTriplet": "x64-windows-static",
+    "vcpkg.target.useStaticLib": true,
+    "cmake.configureSettings": {
+        "CMAKE_TOOLCHAIN_FILE": "path to your vcpkg instalation directory",
+        "CMAKE_MSVC_RUNTIME_LIBRARY" : "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+    },
+    "vcpkg.target.installDependencies": true,
+    "vcpkg.target.preferSystemLibs": false,
+    "vcpkg.target.useManifest": true
+}
+```
 
-9. 
+If on Linux
 
-10. 
+```json
+{
+    "cmake.generator": "Ninja",
+    "cmake.configureArgs": [
+        "-DVCPKG_APPLOCAL_DEPS=ON",
+        "-DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON",
+        "-DVCPKG_MANIFEST_MODE=ON",
+        "-DVCPKG_TARGET_TRIPLET=x64-linux-static"
+    ],
+    "vcpkg.general.enable": true,
+    "vcpkg.target.hostTriplet": "x64-linux-static",
+    "vcpkg.target.defaultTriplet": "x64-linux-static",
+    "vcpkg.target.useStaticLib": true,
+    "cmake.configureSettings": {
+        "CMAKE_TOOLCHAIN_FILE": "path to your vcpkg instalation directory",
+    },
+    "vcpkg.target.installDependencies": true,
+    "vcpkg.target.preferSystemLibs": false,
+    "vcpkg.target.useManifest": true
+}
+```
+
+Let me explain briefly what we are doing with each command. On the generator configuration we use Ninja because it significantly speeds up our compilation times of the entire project.  The configure args properly configure VCPKG according to the behavior we desire.  The CMAKE_TOOLCHAIN_FILE tells cmake where to find the vcpkg directory installed in step XX. And we use manifeast to guarantee that we have no incorrect configurations from other projects where you are using vcpkg
+
+9. One this this done you are finally ready to configure and compile Curan properly, Congratulations!
+ 
 ## Understand the structure
 
 So you have found yourself in front of Curan and you have sucessefully compiled the Curan SDK without any errors. Now you have a goal in mind and want to start implementing your own custom solutions for your medical applications. Well, this tutorial introduces the base cases of the classes available to achieve your goals. 
