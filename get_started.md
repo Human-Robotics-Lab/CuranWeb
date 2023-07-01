@@ -54,9 +54,7 @@ and write "code ." This will open the visual studio code and click that you trus
     "vcpkg.target.useManifest": true
 }
 ```
-
-If on Linux
-
+(If on Linux)
 ```json
 {
     "cmake.generator": "Ninja",
@@ -78,7 +76,6 @@ If on Linux
     "vcpkg.target.useManifest": true
 }
 ```
-
 Let me explain briefly what we are doing with each command. On the generator configuration we use Ninja because it significantly speeds up our compilation times of the entire project.  The configure args properly configure VCPKG according to the behavior we desire.  The CMAKE_TOOLCHAIN_FILE tells cmake where to find the vcpkg directory installed in step XX. And we use manifeast to guarantee that we have no incorrect configurations from other projects where you are using vcpkg
 
 9. One this this done you are finally ready to configure and compile Curan properly, Congratulations!
