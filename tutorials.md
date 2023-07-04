@@ -565,57 +565,28 @@ return 0;
 This is the result of all of our hard work
 ![buttons_container](assets/images/buttons_container.png)
 
-Altough its a bit anoying that the lettering type is too small. Well no problem, in our Button::Info struct there is a field that controls the size of the font we are using to render our buttons, lets change that from 15 to 30 as follows
+Altough its a bit anoying that the lettering type is too small. Well no problem, in our Button we can custumize the size of the type of letter to be larger, (the default is 10) and you can also customize the type of lettering used!, lets change that from 10 to 30 as follows
 
 ```cpp
-SkFont text_font = SkFont(typeface, 30, 1.0f, 0.0f);
-text_font.setEdging(SkFont::Edging::kAntiAlias);
+auto button1 = Button::make("print name",resources);
+button1->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
+button1->set_callback([](Button* button,ConfigDraw* config){
+    std::cout << "my name is Eminem\n";
+});
+auto button2 = Button::make("print age",resources);
+button2->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
+button2->set_callback([](Button* button,ConfigDraw* config){
+    std::cout << "I am old\n";
+});
+auto button3 = Button::make("print eureka",resources);
+button3->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
+button3->set_callback([](Button* button,ConfigDraw* config){
+    std::cout << "Eureka, I wrote a rime\n";
+});
 ```
 
 This results in the following 
 ![buttons_larger_letter_type](assets/images/buttons_larger_letter_type.png)
-
-Now finaly we want to add the callback behavior to our window. This is done through a [lambda](https://en.cppreference.com/w/cpp/language/lambda) and [variants](https://en.cppreference.com/w/cpp/utility/variant). Lambdas are blocks of code which capture variables as desired and variants are a special safe kind of [unions](https://en.cppreference.com/w/c/language/union). Don't worry about the names, you just need to know how to implement the behavior you desire.
-
-This is how you define a lambda which can be called by your button.
-
-```cpp
-auto button_callback = [](Button* slider,ConfigDraw* config) {
-    std::cout << "print Vlad\n"; 
-};
-```
-Now lets change the code that creates the buttons to obtain the behavior we want 
-
-```cpp
-Button::Info infor{ resources };
-infor.button_text = "print name";
-infor.click_color = SK_ColorRED;
-infor.hover_color = SK_ColorCYAN;
-infor.waiting_color = SK_ColorGRAY;
-infor.icon_identifier = "";
-infor.callback = [](Button* slider,ConfigDraw* config) {
-    std::cout << "print Vlad\n"; 
-};
-infor.paintButton = paint_square;
-infor.paintText = paint_text;
-infor.size = SkRect::MakeWH(100, 80);
-infor.textFont = text_font;
-std::shared_ptr<Button> button1 = Button::make(infor);
-
-infor.button_text = "print age";
-infor.callback = [](Button* slider,ConfigDraw* config) {
-    std::cout << "print 42\n"; 
-};
-std::shared_ptr<Button> button2 = Button::make(infor);
-
-infor.button_text = "print Eureka";
-infor.callback = [](Button* slider,ConfigDraw* config) {
-    std::cout << "Eureka\n"; 
-};
-std::shared_ptr<Button> button3 = Button::make(infor);
-```
-
-With this you have the widget behavior you desire. Because the lambdas can capture anything, if your imagination if powerfull, you can create quite complex systems.
 
 Now obviously there are more widgets which are usefull in this context. For example in the context of Curan, it is extremelly important to draw an image which we received from a peripheral at a constant framerate. To do this we developed the ImageDisplay class. Assume that you are testing an algorithm and just want to see how the image looks. Well for that we can define the ImageDisplay class and a single container which completly fills our Page as follows.
 
