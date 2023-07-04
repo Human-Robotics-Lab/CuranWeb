@@ -382,14 +382,6 @@ try {
 	DisplayParams param{ std::move(context),1200,800 };
 	std::unique_ptr<Window> viewer = std::make_unique<Window>(std::move(param));
 
-	SkColor colbuton = { SK_ColorRED };
-
-	SkPaint paint_square;
-	paint_square.setStyle(SkPaint::kFill_Style);
-	paint_square.setAntiAlias(true);
-	paint_square.setStrokeWidth(4);
-	paint_square.setColor(colbuton);
-
     //Things that we will add in the next portion of the tutorial
 
 	while (!glfwWindowShouldClose(viewer->window)) {
@@ -418,7 +410,7 @@ catch (...) {
 }
 ```
 
-This source code creates a window through the [GLFW library](https://www.glfw.org/) which appends signals to the 'std::unique_ptr<Window> viewer' object. The types of signals Curan propagates are Empty,Move, Press, Scroll, Unpress, ItemDropped, Key. The move is a mouse movement, the Press is a mouse press, the scroll is the scroll with a mouse, the unpress is when the mouse is release, itemdropped is when you drag a item into the window and key is a keyboard press. 
+This source code creates a window through the [GLFW library](https://www.glfw.org/) which appends signals to the 'std::unique_ptr<Window> viewer' object. The types of signals Curan propagates are Empty,Move, Press, Scroll, Unpress, ItemDropped, Key. The move is a mouse movement, the Press is a mouse press, the scroll is the scroll with a mouse, the unpress is when the mouse is released, itemdropped is when you drag a item into the window and key is a keyboard press. 
 
 This while loop runs until the window is closed. Now obviously you don't want to program all types of objects like buttons and so on, everytime you want this type of behavior. Curan has a light Widget implementation which you can use for your goals. Lets see how curan goes about defining this widget behavior
 
@@ -432,42 +424,103 @@ Assume that you want three buttons all with distict behavior:
 Further notice that we would like to control the colors when we are hovering with the mouse, when we click the button and while nothing is interacting with the button. This is controlled through the Button::Info structure feed into the constructor of Button. We would also like Button 1 to be above button 2 and these two are on the left side of button 3. To achieve this we must first create the buttons as follows
 
 ```cpp
-Button::Info infor{ resources };
-infor.button_text = "print name";
-infor.click_color = SK_ColorRED;
-infor.hover_color = SK_ColorCYAN;
-infor.waiting_color = SK_ColorGRAY;
-infor.icon_identifier = "";
-infor.paintButton = paint_square;
-infor.paintText = paint_text;
-infor.size = SkRect::MakeWH(100, 80);
-infor.textFont = text_font;
-std::shared_ptr<Button> button1 = Button::make(infor);
+std::unique_ptr<Button> button1 = Button::make("print name",resources);
 
-infor.button_text = "print age";
-std::shared_ptr<Button> button2 = Button::make(infor);
+std::unique_ptr<Button> button2 = Button::make("print age",resources);
 
-infor.button_text = "print Eureka";
-std::shared_ptr<Button> button3 = Button::make(infor);
+std::unique_ptr<Button> button3 = Button::make("print eureka",resources);
+
 ```
-Notice that the Button::Info structure contains all these things we desire to control. Later we will show how we can specify the behaviour of the button once it is clicked 
-
-Now the buttons have some of the desired behavior we desire, but some things are still missing, such as their layout. To control the layout Curan has the concept of a container. Containers are objects which contain other objects, be them widgets, or other containers. Given the specification of the buttons we defined we need two containers. One which is a vertical container which contains button 1 and 2 and an horizontal container which contains the first container and button 3. This is done as follows
+Notice that the simplicity of creating these buttons, you dont need a lot of work to get buttons up a running. By default they have a custom coloring scheme when you hover, when you click, etc.. Assume that you want to custumize the look the buttons. Btw because we are fancy, we can use the auto keyword to reduce the amount of lines of code we need to write as such (auto deduces the type of the object at compile time, thus both expressions are equivalent)
 
 ```cpp
-Container::InfoLinearContainer info;
-info.arrangement = curan::ui::Arrangement::VERTICAL;
-info.divisions = { 0.0 , 0.5 , 1.0 };
-info.layouts = { button1 ,button2 };
-info.paint_layout = paint_square2;
-std::shared_ptr<Container> container = Container::make(info);
+auto button1 = Button::make("print name",resources);
+button1->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
 
-info.arrangement = curan::ui::Arrangement::HORIZONTAL;
-info.divisions = { 0.0 , 0.5 , 1.0 };
-info.layouts = { container , button2 };
-std::shared_ptr<Container> container2 = Container::make(info);
+auto button2 = Button::make("print age",resources);
+button2->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
+
+auto button3 = Button::make("print eureka",resources);
+button3->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
+```
+
+Notice that we can compose calls in sequence when configuring buttons, this applies to most functions of the object (after the set_size call you can't compose more calls in sequence because the method does not return a reference to our object). The only thing we are missing is to customize the callback that we desire for our object as such
+
+```cpp
+auto button1 = Button::make("print name",resources);
+button1->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
+button1->set_callback([](Button* button,ConfigDraw* config){
+    std::cout << "my name is Eminem\n";
+});
+auto button2 = Button::make("print age",resources);
+button2->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
+button2->set_callback([](Button* button,ConfigDraw* config){
+    std::cout << "I am old\n";
+});
+auto button3 = Button::make("print eureka",resources);
+button3->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
+button3->set_callback([](Button* button,ConfigDraw* config){
+    std::cout << "Eureka, I wrote a rime\n";
+});
+```
+
+Now the buttons have some of the desired behavior we desire, but some things are still missing, such as their layout. To control the layout of buttons on screen Curan has the concept of a container. Containers are objects which contain other objects, be them widgets, or other containers. Given the specification of the buttons we defined we need two containers. One which is a vertical container which contains button 1 and 2 and an horizontal container which contains the first container and button 3. This is done as follows
+
+```cpp
+auto button1 = Button::make("print name",resources);
+button1->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
+button1->set_callback([](Button* button,ConfigDraw* config){
+    std::cout << "my name is Eminem\n";
+});
+auto button2 = Button::make("print age",resources);
+button2->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
+button2->set_callback([](Button* button,ConfigDraw* config){
+    std::cout << "I am old\n";
+});
+auto button3 = Button::make("print eureka",resources);
+button3->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
+button3->set_callback([](Button* button,ConfigDraw* config){
+    std::cout << "Eureka, I wrote a rime\n";
+});
+
+auto buttoncontainer = Container::make(Container::ContainerType::LINEAR_CONTAINER,Container::Arrangement::VERTICAL);
+*buttoncontainer << std::move(button1) << std::move(button2);
+
+auto widgetcontainer = Container::make(Container::ContainerType::LINEAR_CONTAINER,Container::Arrangement::HORIZONTAL);
+*widgetcontainer << std::move(buttoncontainer) << std::move(button3);
  ```
-Notice the divisions vector. This allows us to control the relative spacing between widgets. Now we need to draw the containers somehow. We do this by creating a page. A page contains one container which can itself contain containers recursivelly. This allows us to create a tree structure of things to draw on screen. Because our containers are already completly defined we just need to tell the page that it must draw container2
+
+This takes the total available space on screen and by default it lays out our objects on screen. If you want to control how must space each object has, we can specify the related spacing as such 
+
+```cpp
+auto button1 = Button::make("print name",resources);
+button1->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
+button1->set_callback([](Button* button,ConfigDraw* config){
+    std::cout << "my name is Eminem\n";
+});
+auto button2 = Button::make("print age",resources);
+button2->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
+button2->set_callback([](Button* button,ConfigDraw* config){
+    std::cout << "I am old\n";
+});
+auto button3 = Button::make("print eureka",resources);
+button3->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
+button3->set_callback([](Button* button,ConfigDraw* config){
+    std::cout << "Eureka, I wrote a rime\n";
+});
+
+auto buttoncontainer = Container::make(Container::ContainerType::LINEAR_CONTAINER,Container::Arrangement::VERTICAL);
+*buttoncontainer << std::move(button1) << std::move(button2);
+buttoncontainer->set_division({0.0 0.3 1.0});
+
+auto widgetcontainer = Container::make(Container::ContainerType::LINEAR_CONTAINER,Container::Arrangement::HORIZONTAL);
+*widgetcontainer << std::move(buttoncontainer) << std::move(button3);
+buttoncontainer->set_division({0.0 0.6 1.0});
+ ```
+
+ Now button 1 and 2 will ocupy 60% of the screen horizontally and 30% for button 1 vertically and 70% for button 2 while button 3 ocupies 40% horizontally and 100% vertically.
+
+Now we need to draw the containers somehow. We do this by creating a page. A page contains one container which can itself contain containers recursivelly. This allows us to create a tree structure of things to draw on screen. Because our containers are already completly defined we just need to tell the page that it must draw container2
 
 ```cpp
 auto rec = viewer->get_size();
