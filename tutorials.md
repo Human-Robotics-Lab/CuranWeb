@@ -607,14 +607,6 @@ try {
 	DisplayParams param{ std::move(context),1200,800 };
 	std::unique_ptr<Window> viewer = std::make_unique<Window>(std::move(param));
 
-	SkColor colbuton = { SK_ColorRED };
-
-	SkPaint paint_square;
-	paint_square.setStyle(SkPaint::kFill_Style);
-	paint_square.setAntiAlias(true);
-	paint_square.setStrokeWidth(4);
-	paint_square.setColor(colbuton);
-
     //Things that we will add in the next portion of the tutorial
 
 	while (!glfwWindowShouldClose(viewer->window)) {
