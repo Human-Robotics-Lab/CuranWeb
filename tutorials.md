@@ -598,8 +598,6 @@ Now obviously there are more widgets which are usefull in this context. For exam
 #include "userinterface/widgets/IconResources.h"
 #include <iostream>
 
-curan::ui::Page get_desired_page();
-
 int main() {
 try {
 	using namespace curan::ui;
