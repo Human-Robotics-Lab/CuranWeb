@@ -565,24 +565,24 @@ return 0;
 This is the result of all of our hard work
 ![buttons_container](assets/images/buttons_container.png)
 
-Altough its a bit anoying that the lettering type is too small. Well no problem, in our Button we can custumize the size of the type of letter to be larger, (the default is 10) and you can also customize the type of lettering used!, lets change that from 10 to 30 as follows
+Altough its a bit anoying that the lettering type is too small. Well no problem, in our Button we can custumize the size of the type of letter to be larger, (the default is 15) and you can also customize the type of lettering used!, lets change that from 15 to 30 as follows
 
 ```cpp
 auto button1 = Button::make("print name",resources);
 button1->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
 button1->set_callback([](Button* button,ConfigDraw* config){
     std::cout << "my name is Eminem\n";
-});
+}).set_font_size(30);
 auto button2 = Button::make("print age",resources);
 button2->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
 button2->set_callback([](Button* button,ConfigDraw* config){
     std::cout << "I am old\n";
-});
+}).set_font_size(30);
 auto button3 = Button::make("print eureka",resources);
 button3->set_click_color(SK_ColorGRAY).set_hover_color(SK_ColorDKGRAY).set_waiting_color(SK_ColorBLACK).set_size(SkRect::MakeWH(100, 80));
 button3->set_callback([](Button* button,ConfigDraw* config){
     std::cout << "Eureka, I wrote a rime\n";
-});
+}).set_font_size(30);
 ```
 
 This results in the following 
@@ -598,7 +598,7 @@ Now obviously there are more widgets which are usefull in this context. For exam
 #include "userinterface/widgets/IconResources.h"
 #include <iostream>
 
-std::shared_ptr<curan::ui::Page> get_desired_page();
+curan::ui::Page get_desired_page();
 
 int main() {
 try {
@@ -607,27 +607,40 @@ try {
 	DisplayParams param{ std::move(context),1200,800 };
 	std::unique_ptr<Window> viewer = std::make_unique<Window>(std::move(param));
 
-    //Things that we will add in the next portion of the tutorial
+    auto image_display = ImageDisplay::make();
+    auto container = Container::make(Container::ContainerType::LINEAR_CONTAINER,Container::Arrangement::HORIZONTAL);
+    *container << std::move(image_display);
+    curan::ui::Page page{std::move(container),SK_ColorBLACK}
 
-	while (!glfwWindowShouldClose(viewer->window)) {
-			auto start = std::chrono::high_resolution_clock::now();
-			SkSurface* pointer_to_surface = viewer->getBackbufferSurface();
-			SkCanvas* canvas = pointer_to_surface->getCanvas();
-			canvas->drawColor(SK_ColorWHITE);
-			
-            //do your own things
+    int width = rec.width();
+    int height = rec.height();
 
-			glfwPollEvents();
-			auto signals = viewer->process_pending_signals();
+    ConfigDraw config{&page};
 
-			bool val = viewer->swapBuffers();
-			if (!val)
-				std::cout << "failed to swap buffers\n";
-			auto end = std::chrono::high_resolution_clock::now();
-			std::this_thread::sleep_for(std::chrono::milliseconds(16) - std::chrono::duration_cast<std::chrono::milliseconds>(end - start));
-	}
-	return 0;
-}
+    while (!glfwWindowShouldClose(viewer->window)) {
+	    auto start = std::chrono::high_resolution_clock::now();
+	    SkSurface* pointer_to_surface = viewer->getBackbufferSurface();
+    	auto temp_height = pointer_to_surface->height();
+    	auto temp_width = pointer_to_surface->width();
+	    SkCanvas* canvas = pointer_to_surface->getCanvas();
+    	if (temp_height != height || temp_width != width) {
+    		rec = SkRect::MakeWH(temp_width, temp_height);
+    		page->propagate_size_change(rec);
+        }
+    	page->draw(canvas);
+    	auto signals = viewer->process_pending_signals();
+    	if (!signals.empty())
+    		page->propagate_signal(signals.back(),&config);
+    	glfwPollEvents();
+	
+    	bool val = viewer->swapBuffers();
+    	if (!val)
+    		std::cout << "failed to swap buffers\n";
+    	auto end = std::chrono::high_resolution_clock::now();
+    	std::this_thread::sleep_for(std::chrono::milliseconds(16) - std::chrono::duration_cast<std::chrono::milliseconds>(end - start));
+    }
+    return 0;   
+    }
 catch (...) {
 	std::cout << "Failed";
 	return 1;
@@ -635,13 +648,7 @@ catch (...) {
 }
 ```
 
-Where get_desired_page is implemented as in 
-
-```cpp
-std::shared_ptr<curan::ui::Page> get_desired_page(){
-
-};
-```
+Now we need to use this pointer somewhere. Remember that we are using unique pointer, i.e. only a single instance of this pointer exists.
 
 Another important widget which is usefull is a slider. This is how you can obtain this behavior
 
