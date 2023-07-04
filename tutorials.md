@@ -515,29 +515,27 @@ buttoncontainer->set_division({0.0 0.3 1.0});
 
 auto widgetcontainer = Container::make(Container::ContainerType::LINEAR_CONTAINER,Container::Arrangement::HORIZONTAL);
 *widgetcontainer << std::move(buttoncontainer) << std::move(button3);
-buttoncontainer->set_division({0.0 0.6 1.0});
+widgetcontainer->set_division({0.0 0.6 1.0});
  ```
 
  Now button 1 and 2 will ocupy 60% of the screen horizontally and 30% for button 1 vertically and 70% for button 2 while button 3 ocupies 40% horizontally and 100% vertically.
 
-Now we need to draw the containers somehow. We do this by creating a page. A page contains one container which can itself contain containers recursivelly. This allows us to create a tree structure of things to draw on screen. Because our containers are already completly defined we just need to tell the page that it must draw container2
+Now we need to draw the containers somehow. We do this by creating a page. A page contains one container which can itself contain containers recursivelly. This allows us to create a tree structure of things to draw on screen. Because our containers are already completly defined we just need to tell the page that it must draw the widgetcontainer
 
 ```cpp
 auto rec = viewer->get_size();
-Page::Info information;
-information.backgroundcolor = SK_ColorBLACK;
-information.contained = container2;
-std::shared_ptr<Page> page = Page::make(information);
-page->propagate_size_change(rec);
+Page page = Page{widgetcontainer, SK_ColorBLACK};
+page.propagate_size_change(rec);
 ```
 
+We query the size of the viewer and propagate this size throught the page so that all widgets/ containers compute their relative position on screen.
 With this we finaly have a page that we can draw. Lets look at the loop which draws our window
 
 ```cpp
 int width = rec.width();
 int height = rec.height();
 
-ConfigDraw config;
+ConfigDraw config{&page};
 
 while (!glfwWindowShouldClose(viewer->window)) {
 	auto start = std::chrono::high_resolution_clock::now();
