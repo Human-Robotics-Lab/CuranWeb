@@ -646,25 +646,152 @@ catch (...) {
 }
 ```
 
-Now we need to use this pointer somewhere. Remember that we are using unique pointer, i.e. only a single instance of this pointer exists.
-
-Another important widget which is usefull is a slider. This is how you can obtain this behavior
+Now we need to use this pointer somewhere. Remember that we are using unique pointer, i.e. only a single instance of this pointer exists. To use this object somewhere else we can get the underlying pointer, but the memory is still controlled by the unique pointer. Lets lauch a thread to generate a random image. We can first implement a class that represents a block of memory which we can acess as an image. This is a simple implementation of a class that contains memory. We can make copies of this class as we wish.
 
 ```cpp
-int main(){
+class ImageTesting {
+	int _width;
+	int _height;
+	std::shared_ptr<unsigned char[]> buffer;
+public:
 
-    return 0;
-}
+	ImageTesting(int width, int height) : _width{ width }, _height{ height } {
+		buffer = std::shared_ptr<unsigned char[]>(new unsigned char[width() * height()]);
+	}
+
+	inline int width() {
+		return _width;
+	}
+
+	inline int height() {
+		return _height;
+	}
+
+	inline void set(int w, int h, char val) {
+		unsigned char* loc = nullptr;
+		if (buffer) {
+			loc = buffer.get();
+			loc[w + h * height()] = val;
+		}
+	}
+
+	inline int size() {
+		return _width * _height;
+	}
+
+	unsigned char* get_scalar_pointer() {
+		if (buffer)
+			return buffer.get();
+		return nullptr;
+	}
+};
 ```
-
-And lastly for our purposes, because we use OpenIGTLink to communicate with peripherals we can use the custom OpenIGTLink widget as follows
+Lets also write a function that takes this image and generates a spiral shape as such
 
 ```cpp
-int main(){
 
-    return 0;
+ImageTesting update_texture(ImageTesting image, float value) {
+
+	for (int32_t r = 0; r < image.height(); ++r)
+	{
+		float r_ratio = static_cast<float>(r) / static_cast<float>(image.height() - 1);
+		for (int c = 0; c < image.width(); ++c)
+		{
+			float c_ratio = static_cast<float>(c) / static_cast<float>(image.width() - 1);
+
+			vec2 delta{ (r_ratio - 0.5f), (c_ratio - 0.5f) };
+
+			float angle = std::atan2(delta.x, delta.y);
+
+			float distance_from_center = delta.norm();
+
+			float intensity = (sin(1.0 * angle + 30.0f * distance_from_center + 10.0 * value) + 1.0f) * 0.5f;
+			unsigned char val = (int)((intensity + 0.5) * 255);
+			image.set(c, r, val);
+		}
+	}
+	return image;
 }
 ```
+Now we can finally lauch our thread with the logic to upload our image. Notice that we must capture in the lambda our image. Thats because we need to guarantee that the block of memory of the image (the shared pointer) is alive when the page tries to render it. 
+
+```cpp
+#define STB_IMAGE_IMPLEMENTATION
+#include "userinterface/widgets/ConfigDraw.h"
+#include "userinterface/Window.h"
+#include "userinterface/widgets/Page.h"
+#include "userinterface/widgets/IconResources.h"
+#include <iostream>
+
+void funtion(ImageDisplay* display){
+    double timer = 0.0;
+    while(true){
+        ImageTesting img{ 100,100 };
+        img = update_texture(std::move(img), 1.0 + time);
+        auto lam = [img](SkPixmap& requested) {
+	        auto inf = SkImageInfo::Make(img.width(), img.height(), SkColorType::kGray_8_SkColorType, SkAlphaType::kOpaque_SkAlphaType);
+	        size_t row_size = img.width() * sizeof(char);
+	        SkPixmap map{inf,img->GetScalarPointer(),row_size};
+	        requested = map;
+	        return;
+        };
+        display->update_image(lam);
+        timer += 0.001;
+    }
+}
+
+int main() {
+try {
+	using namespace curan::ui;
+	std::unique_ptr<Context> context = std::make_unique<Context>();;
+	DisplayParams param{ std::move(context),1200,800 };
+	std::unique_ptr<Window> viewer = std::make_unique<Window>(std::move(param));
+
+    auto image_display = ImageDisplay::make();
+    ImageDisplay* pointer_to_block_of_memory = image_display.get();
+    auto container = Container::make(Container::ContainerType::LINEAR_CONTAINER,Container::Arrangement::HORIZONTAL);
+    *container << std::move(image_display);
+    curan::ui::Page page{std::move(container),SK_ColorBLACK}
+
+    std::thread image_generator(funtion(pointer_to_block_of_memory));
+
+    int width = rec.width();
+    int height = rec.height();
+
+    ConfigDraw config{&page};
+
+    while (!glfwWindowShouldClose(viewer->window)) {
+	    auto start = std::chrono::high_resolution_clock::now();
+	    SkSurface* pointer_to_surface = viewer->getBackbufferSurface();
+    	auto temp_height = pointer_to_surface->height();
+    	auto temp_width = pointer_to_surface->width();
+	    SkCanvas* canvas = pointer_to_surface->getCanvas();
+    	if (temp_height != height || temp_width != width) {
+    		rec = SkRect::MakeWH(temp_width, temp_height);
+    		page->propagate_size_change(rec);
+        }
+    	page->draw(canvas);
+    	auto signals = viewer->process_pending_signals();
+    	if (!signals.empty())
+    		page->propagate_signal(signals.back(),&config);
+    	glfwPollEvents();
+	
+    	bool val = viewer->swapBuffers();
+    	if (!val)
+    		std::cout << "failed to swap buffers\n";
+    	auto end = std::chrono::high_resolution_clock::now();
+    	std::this_thread::sleep_for(std::chrono::milliseconds(16) - std::chrono::duration_cast<std::chrono::milliseconds>(end - start));
+    }
+    image_generator.join();
+    return 0;   
+    }
+catch (...) {
+	std::cout << "Failed";
+	return 1;
+}
+}
+```
+There are more wigets available in the library. Read some of the examples to find the tools which are usefull to your needs (there are slider), pure text, and more!
 
 ### 3D-Rendering
 
