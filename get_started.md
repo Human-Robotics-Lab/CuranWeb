@@ -29,7 +29,7 @@ and write "code ." This will open the visual studio code and click that you trus
 ![visual studio extensions](assets/images/visual_studio_extensions.png) 
 
 7. Enable all extensions. Now if you go back to your folder in visual studio. There should be a file in the root directory of your project called .vscode with a settings.json description of the build configuration of the project as shown in the 
-![image of vscode root path](assets/images/visual_studio_extensions.png) 
+![image of vscode root path](assets/images/visualstudio_settings.png) 
 
 8. Now that the file has been generated we are almost done with the configuration of the project. You need to change the following properties, (If on Windows)
 ```json
