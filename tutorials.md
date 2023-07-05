@@ -980,6 +980,20 @@ For a reference of objects that you can add to the scene look and the classes av
 ```
 
 Thus your file structure would look something like this
+```
+some directory ---
+                 |-> arm.json
+                 |-> BaseModified.obj
+                 |-> Link1Modified.obj
+                 |-> Link2Modified.obj
+                 |-> Link3Modified.obj
+                 |-> Link4Modified.obj
+                 |-> Link5Modified.obj
+                 |-> Link6Modified.obj
+                 |-> Link7Modified.obj
+```
+
+Now in your C++ code you can just launch a function which appends the robot to the window and then moves the robot in real time
 
 ```cpp
 #include "rendering/SequencialLinks.h"
@@ -988,7 +1002,15 @@ Thus your file structure would look something like this
 #include "rendering/Sphere.h"
 #include <iostream>
 
-void move_robot(vsg::ref_ptr<curan::renderable::Renderable> lbr, std::atomic<bool>& continue_updating){
+void move_robot(curan::renderable::Window& window, std::atomic<bool>& continue_updating){
+    std::filesystem::path robot_path = CURAN_COPIED_RESOURCE_PATH"/models/lbrmed/arm.json";
+    curan::renderable::SequencialLinks::Info create_info;
+    create_info.convetion = vsg::CoordinateConvention::Y_UP;
+    create_info.json_path = robot_path;
+    create_info.number_of_links = 8;
+    vsg::ref_ptr<curan::renderable::Renderable> robotRenderable = curan::renderable::SequencialLinks::make(create_info);
+    window << robotRenderable;
+
     double angle = 0.0;
     double time = 0.0;
     while(continue_updating.load()){
@@ -1014,17 +1036,8 @@ int main(int argc, char **argv) {
         info.window_size = size;
         curan::renderable::Window window{info};
 
-        std::filesystem::path robot_path = CURAN_COPIED_RESOURCE_PATH"/models/lbrmed/arm.json";
-        curan::renderable::SequencialLinks::Info create_info;
-        create_info.convetion = vsg::CoordinateConvention::Y_UP;
-        create_info.json_path = robot_path;
-        create_info.number_of_links = 8;
-        vsg::ref_ptr<curan::renderable::Renderable> robotRenderable = curan::renderable::SequencialLinks::make(create_info);
-        window << robotRenderable;
-
         std::atomic<bool> continue_updating = true;
-
-        std::thread local_thread{move_robot(robotRenderable,continue_updating)};
+        std::thread local_thread{move_robot(window,continue_updating)};
 
         window.run();
         continue_updating.store(false);
@@ -1047,6 +1060,9 @@ int main(int argc, char **argv) {
 }
 
 ```
+
+And finaly this is the result of all of our hard work
+![world_with_box](assets/images/world_with_box.png)
 
 ### Optimization
 
