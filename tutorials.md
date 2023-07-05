@@ -818,6 +818,8 @@ renderable
 )
 ```
 
+# Empty Scene
+
 To render a 3D scene we have a couple of requirments in our lab. We must have the flexibility do add objects at runtime, we must be able to delete objects from a scene, add objects whilst the program is running. This is how you can create a basic empty scene. 
 
 ```cpp
@@ -861,7 +863,9 @@ int main(int argc, char **argv) {
 This source code will create an empty window which we can rotate and move.
 ![empty_world](assets/images/empty_world.png)
 
-The wired floor is automatically added to the scene to facilitate the visualization by inexperienced personell viewing our demos (simmilar to the background of blender). The code blocks once the window.run() method is called. Now assume that we add a function in a thread that goes to do something like waiting for a connection to be established and once this connection is established we want to add a sphere to the scene. This is how you would achieve this behavior.
+The wired floor is automatically added to the scene to facilitate the visualization by inexperienced personell viewing our demos (simmilar to the background of blender). The code blocks once the window.run() method is called. Now assume that we add a function in a thread that goes to do something like waiting for a connection to be established and once this connection is established we want to add a box to the scene. This is how you would achieve this behavior.
+
+# Add asyncronous box
 
 ```cpp
 #include "rendering/SequencialLinks.h"
@@ -921,7 +925,11 @@ int main(int argc, char **argv) {
 This code adds objects to our scene asyncrounously, which means that we never block the entire scene while waiting for our object. The scene is now 
 ![world_with_box](assets/images/world_with_box.png)
 
-For a reference of objects that you can add to the scene look and the classes available inside the renderer library. There are two special objects which need a bit more attention. How to create a robot is one of them. So in Curan you can create an Object called Sequencial Links. The API we use follows the Denavit-Harterberg convention. To define the robot in a file you need to write a json file describing where the meshes are, whats their relative transformation with respect to the previous link. Here is the json format of the LBR Med where you specify where the meshes are relative to the json file.
+For a reference of objects that you can add to the scene look and the classes available inside the renderer library. There are two special objects which need a bit more attention. 
+
+# SequencialLinks
+
+How to create a robot is one of them. So in Curan you can create an Object called Sequencial Links. The API we use follows the Denavit-Harterberg convention. To define the robot in a file you need to write a json file describing where the meshes are, whats their relative transformation with respect to the previous link. Here is the json format of the LBR Med where you specify where the meshes are relative to the json file.
 
 ```json
 [
