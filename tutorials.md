@@ -412,6 +412,8 @@ catch (...) {
 
 This source code creates a window through the [GLFW library](https://www.glfw.org/) which appends signals to the 'std::unique_ptr<Window> viewer' object. The types of signals Curan propagates are Empty,Move, Press, Scroll, Unpress, ItemDropped, Key. The move is a mouse movement, the Press is a mouse press, the scroll is the scroll with a mouse, the unpress is when the mouse is released, itemdropped is when you drag a item into the window and key is a keyboard press. 
 
+# Button
+
 This while loop runs until the window is closed. Now obviously you don't want to program all types of objects like buttons and so on, everytime you want this type of behavior. Curan has a light Widget implementation which you can use for your goals. Lets see how curan goes about defining this widget behavior
 
 Assume that you want three buttons all with distict behavior:
@@ -588,7 +590,11 @@ button3->set_callback([](Button* button,ConfigDraw* config){
 This results in the following 
 ![buttons_larger_letter_type](assets/images/buttons_larger_letter_type.png)
 
-Now obviously there are more widgets which are usefull in this context. For example in the context of Curan, it is extremelly important to draw an image which we received from a peripheral at a constant framerate. To do this we developed the ImageDisplay class. Assume that you are testing an algorithm and just want to see how the image looks. Well for that we can define the ImageDisplay class and a single container which completly fills our Page as follows.
+Now obviously there are more widgets which are usefull in this context. For example in the context of Curan, it is extremelly important to draw an image which we received from a peripheral at a constant framerate. To do this we developed the ImageDisplay class. 
+
+# ImageDisplay
+
+Assume that you are testing an algorithm and just want to see how the image looks. Well for that we can define the ImageDisplay class and a single container which completly fills our Page as follows.
 
 ```cpp
 #define STB_IMAGE_IMPLEMENTATION
@@ -1062,7 +1068,7 @@ int main(int argc, char **argv) {
 ```
 
 And finaly this is the result of all of our hard work
-![world_with_box](assets/images/world_with_box.png)
+![world_with_box](assets/images/sequencial_links.png)
 
 ### Optimization
 
