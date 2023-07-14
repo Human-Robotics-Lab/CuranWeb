@@ -74,14 +74,10 @@ and the bar function is given by
 
 ```cpp
 int bar(){
-    asio::io_context context;
-    asio::serial_port serial(context);
-    serial.open("COM1");
-    double gain = 1;
-    std::string control_action;
+    double control_law;
     while(true){
         //we need to check if our agressive control law must change or not 
-        asio::write(serial,asio::buffer(control_action.data(),control_action.size()));
+        //change control_law
     }
 }
 ```
@@ -116,22 +112,15 @@ int foo(std::atomic<bool>& flag_to_signal,double* value){
 
 ```cpp
 int bar(std::atomic<bool>& flag_to_signal,double* value){
-    asio::io_context context;
-    asio::serial_port serial(context);
-    serial.open("COM1");
-    double gain = 1;
-    std::string control_action;
+    double control_law;
     while(true){
         if(flag_to_signal.load()){
             flag_to_signal.store(false);
-            gain = *value;
-            if(gain==0){ //x was pressed we need to stop
-                serial.close();
+            control_law = *value;
+            if(control_law==0){ //x was pressed we need to stop
                 return 1;
             }
         }
-        control_action = std::to_string(gain);
-        asio::write(serial,asio::buffer(control_action.data(),control_action.size()));
     }
 }
 ```
@@ -147,17 +136,61 @@ int foo();
 int bar();
 
 int main(){
+    //atomic variable
     std::atomic<bool> signal_flag = false;
-    double gain_value = 1.0;
-    std::thread io_thread{foo(signal_flag,&gain_value)};
+    //the memory of our shared variable is stored in the stack of the main function
+    double gain_value = 1.0; 
+    // this is a lambda that captures our values (gain_value and signal_flag) by reference
+    //  and uses them at a later point in time
+    auto callable = [&gain_value,&signal_flag](){ foo(signal_flag,&gain_value); }; 
+    // we launch a thread which will execute our lambda
+    std::thread io_thread{callable};
+    //we can now call our bar function repeatadly
     bar(signal_flag,&gain_value);
+    //we need to block for the io_thread to properly exit the program
     io_thread.join();
     return 0;
 }
 
 ```
 
-This almost works, there is a bug hidden in the example. Because we are acessing the control_law double memory location from both threads we have a [race condition](https://en.wikipedia.org/wiki/Race_condition) (to understand the read the [cpp memory model](https://en.cppreference.com/w/cpp/language/memory_model)) (one thread could be stopped whilst we were writing to the double and in the meantime we read this value which contains nonsense until the writing operation is finished). To avoid this, the double variable should also be atomic to guarantee that changes are updated in a single shot. As you can see, designing memory safe code is dificult and requires constant attention. 
+This almost works, there is a bug hidden in the example. Because we are acessing the control_law double memory location from both threads we have a [race condition](https://en.wikipedia.org/wiki/Race_condition) (to understand the read the [cpp memory model](https://en.cppreference.com/w/cpp/language/memory_model)).
+
+A brief explaination is that you have a double in memory (a double are 8 bytes / 64 bits)
+```
+01010101 01010101 01010101 01010101 01010101 01010101 01010101 01010101
+```
+The function foo signals the bar function through the atomic flag that you need to start reading our value. The thead running the bar function reads the first 4 bytes
+```
+01010101 01010101 01010101 01010101 01010101 01010101 01010101 01010101
+----------------------------------
+          these ones
+```
+and you press a key in the meantime, the thread running the function foo could wake up and change the bytes in the mean time to
+```
+11100111 11100111 11100111 11100111 11100111 11100111 11100111 11100111 
+```
+and when the bar function wakes up it will read the remaining four bytes 
+
+
+```
+11100111 11100111 11100111 11100111 11100111 11100111 11100111 11100111 
+                                    ----------------------------------
+                                                these ones
+```
+Thus from the perspective of the bar function the double read was 
+```
+double read by bar
+01010101 01010101 01010101 01010101 11100111 11100111 11100111 11100111 
+
+initial double
+01010101 01010101 01010101 01010101 01010101 01010101 01010101 01010101
+
+double written by foo 
+11100111 11100111 11100111 11100111 11100111 11100111 11100111 11100111 
+```
+
+Notice that the read double has no correlation with any of the two doubles which we wrote from the foo function. To avoid this, the double variable should also be atomic to guarantee that changes are updated in a single shot. As you can see, designing memory safe code is dificult and requires constant attention. 
 
 To deal with these problems curan proposes the class 'SafeQueue' which is basically a queue which we can put things into and request to pull things out of as needeed with guaranteed memory safety. 
 
@@ -189,18 +222,11 @@ int foo(curan::utilitites::SafeQueue<double>& queue){
 ```cpp 
 #include "utilities/SafeQueue.h"
 int bar(curan::utilitites::SafeQueue<double>& queue){
-    asio::io_context context;
-    asio::serial_port serial(context);
-    serial.open("COM1");
-    double gain = 1;
-    std::string control_action;
+    double control_law;
     while(true){
-        if(queue.try_pop(gain) && gain==0){
-            serial.close();
+        if(!queue.wait_and_pop(control_law) || control_law==0){ //x was pressed we need to stop
             return 1;
         }
-        control_action = std::to_string(gain);
-        asio::write(serial,asio::buffer(control_action.data(),control_action.size()));
     }
 }
 ```
