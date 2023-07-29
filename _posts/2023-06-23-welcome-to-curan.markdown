@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Progressing towards the future"
+title:  "Welcome to Curan!"
 date:   2023-06-23 13:48:03 +0100
 categories: curan update
 ---
