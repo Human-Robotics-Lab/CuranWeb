@@ -420,10 +420,13 @@ First we need to include the necessary classes to link to our executable. Next w
 
 ```cpp
 int main() {
-	std::unique_ptr<curan::ui::Context> context = std::make_unique<curan::ui::Context>();;
+	std::unique_ptr<curan::ui::Context> context = std::make_unique<curan::ui::Context>();
 	curan::ui::DisplayParams param{ std::move(context),1200,800 };
 	std::unique_ptr<curan::ui::Window> viewer = std::make_unique<curan::ui::Window>(std::move(param));
 ```
+
+the first object of the type curan::ui::Context basically establishes a link to your GPU, so that we can use Vulkan under the hood to render our application blazing fast. The constructor of the class creates the necessary abstractions and when it is deleted the vulkan objects are deleated in the proper order. The DisplayParams object defines the size of the window and receives the unique pointer of the context object. This object is unique, meaning that only a single instance exists, i.e. when you can the std::move() function the context object is no longer usable in your code because it is now a member of the param object.
+
 
 ```cpp
 	while (!glfwWindowShouldClose(viewer->window)) {
