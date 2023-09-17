@@ -29,6 +29,10 @@ utils
 
 This code signals to CMake that our target depends on utils and when we compile it we must have the relative paths to both the include directories and the library files of the utils target. Now we will introduce a bit of the library for you to get a better graps of when and where to use it.
 
+* SafeQueue : [SafeQueue](#SafeQueue)
+* ThreadPool and Jobs : [ThreadPool and Jobs](#ThreadPool and Jobs)
+* Flags : [Flags](#Flags)
+
 # SafeQueue
 
 Assume that you have two functions, one which reads input from the keyboard and commands how large the gains of your controller (lets call this function foo) and another that establishes a serial connection with an arduino where you send the control commands in real time (bar function) and you want to use the information from the first function to update the controllers of the second. 
@@ -392,7 +396,15 @@ target_link_libraries(myexecutable PUBLIC
 userinterface
 )
 ```
-Now the compiler can link safely to our library. This is a snipeat of code which shows how you can create an empty canvas
+Now the compiler can link safely to our library. 
+
+* Empty Canvas : [Empty Canvas](#Empty Canvas)
+* Buttons : [Buttons](#Buttons)
+* ImageDisplay : [ImageDisplay](#ImageDisplay)
+
+# Empty Canvas 
+
+This is a snipeat of code which shows how you can create an empty canvas
 
 ```cpp
 #define STB_IMAGE_IMPLEMENTATION
@@ -438,7 +450,7 @@ catch (...) {
 
 This source code creates a window through the [GLFW library](https://www.glfw.org/) which appends signals to the 'std::unique_ptr<Window> viewer' object. The types of signals Curan propagates are Empty,Move, Press, Scroll, Unpress, ItemDropped, Key. The move is a mouse movement, the Press is a mouse press, the scroll is the scroll with a mouse, the unpress is when the mouse is released, itemdropped is when you drag a item into the window and key is a keyboard press. 
 
-# Button
+# Buttons
 
 This while loop runs until the window is closed. Now obviously you don't want to program all types of objects like buttons and so on, everytime you want this type of behavior. Curan has a light Widget implementation which you can use for your goals. Lets see how curan goes about defining this widget behavior
 
