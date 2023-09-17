@@ -15,6 +15,8 @@ Once you have understood the layout of the curan project we are ready to dwelve 
 * Communication : [Communication](#communication)
 * Image Processing : [Image Processing](#image-processing)
 * Building Complex Programs : [Complex Programs](#complex-programs)
+
+
 ### Utilities
 
 The utilities library is contained in the Curan API is located in the library folders in the utils folder. In CMAKE the target of the library is 'utils' and tu use it you can define a CMakeLists.txt with the following content 
