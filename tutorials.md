@@ -35,7 +35,7 @@ This code signals to CMake that our target depends on utils and when we compile 
 * ThreadPool and Jobs : [ThreadPool and Jobs](#ThreadPool and Jobs)
 * Flags : [Flags](#Flags)
 
-# SafeQueue
+## SafeQueue
 
 Assume that you have two functions, one which reads input from the keyboard and commands how large the gains of your controller (lets call this function foo) and another that establishes a serial connection with an arduino where you send the control commands in real time (bar function) and you want to use the information from the first function to update the controllers of the second. 
 
@@ -256,7 +256,7 @@ int main(){
 
 This solution reduces code size and guarantees that reading and writing to the queue is safe across threads.
 
-# ThreadPool and Jobs
+## ThreadPool and Jobs
 
 Now lets look at another handy tool in curan which you might need to use in your code. You have an operation which might take a long time, e.g. image prcessing, and as soon as you receive an image you want to launch a thread to process this task whilst dealing with other things, you don't want to wait for the operation to finish in your main thread. 
 
@@ -327,7 +327,7 @@ int main(){
 }
 ```
 
-# Flags
+## Flags
 
 The last flag which is notable and usefull in your day to day inside the utilities target are multihtreaded safe flags. So you are in a situation where 
 you want to wait for a boolean variable to turn positive. This waiting can be achieved with a multitude of tecniques. An amatuer implementation of this behavior would be something like
@@ -404,7 +404,7 @@ Now the compiler can link safely to our library.
 * Buttons : [Buttons](#Buttons)
 * ImageDisplay : [ImageDisplay](#ImageDisplay)
 
-# Empty Canvas 
+## Empty Canvas 
 
 This is a snipeat of code which shows how you can create an empty canvas
 
@@ -414,45 +414,45 @@ This is a snipeat of code which shows how you can create an empty canvas
 #include "userinterface/Window.h"
 #include "userinterface/widgets/IconResources.h"
 #include <iostream>
+```
 
+First we need to include the necessary classes to link to our executable. Next we define our the entry point to our executable looks like, i.e. the classic main function 
+
+```cpp
 int main() {
-try {
-	using namespace curan::ui;
-	std::unique_ptr<Context> context = std::make_unique<Context>();;
-	DisplayParams param{ std::move(context),1200,800 };
-	std::unique_ptr<Window> viewer = std::make_unique<Window>(std::move(param));
+	std::unique_ptr<curan::ui::Context> context = std::make_unique<curan::ui::Context>();;
+	curan::ui::DisplayParams param{ std::move(context),1200,800 };
+	std::unique_ptr<curan::ui::Window> viewer = std::make_unique<curan::ui::Window>(std::move(param));
+```
 
-    //Things that we will add in the next portion of the tutorial
-
+```cpp
 	while (!glfwWindowShouldClose(viewer->window)) {
-			auto start = std::chrono::high_resolution_clock::now();
-			SkSurface* pointer_to_surface = viewer->getBackbufferSurface();
-			SkCanvas* canvas = pointer_to_surface->getCanvas();
-			canvas->drawColor(SK_ColorWHITE);
+		auto start = std::chrono::high_resolution_clock::now();
+		SkSurface* pointer_to_surface = viewer->getBackbufferSurface();
+		SkCanvas* canvas = pointer_to_surface->getCanvas();
+		canvas->drawColor(SK_ColorWHITE);
 			
-            //do your own things
+        //do your own things
 
-			glfwPollEvents();
-			auto signals = viewer->process_pending_signals();
-
-			bool val = viewer->swapBuffers();
-			if (!val)
-				std::cout << "failed to swap buffers\n";
-			auto end = std::chrono::high_resolution_clock::now();
-			std::this_thread::sleep_for(std::chrono::milliseconds(16) - std::chrono::duration_cast<std::chrono::milliseconds>(end - start));
+		glfwPollEvents();
+		auto signals = viewer->process_pending_signals();
+		bool val = viewer->swapBuffers();
+		if (!val)
+			std::printf("failed to swap buffers\n");
+		auto end = std::chrono::high_resolution_clock::now();
+		std::this_thread::sleep_for(std::chrono::milliseconds(16) - std::chrono::duration_cast<std::chrono::milliseconds>(end - start));
 	}
 	return 0;
 }
-catch (...) {
-	std::cout << "Failed";
-	return 1;
-}
-}
 ```
 
-This source code creates a window through the [GLFW library](https://www.glfw.org/) which appends signals to the 'std::unique_ptr<Window> viewer' object. The types of signals Curan propagates are Empty,Move, Press, Scroll, Unpress, ItemDropped, Key. The move is a mouse movement, the Press is a mouse press, the scroll is the scroll with a mouse, the unpress is when the mouse is released, itemdropped is when you drag a item into the window and key is a keyboard press. 
+This source code creates a window through the [GLFW library](https://www.glfw.org/) which appends signals to the 'std::unique_ptr<Window> viewer' object. The types of signals Curan propagates are Empty,Move, Press, Scroll, Unpress, ItemDropped, Key. The move is a mouse movement, the Press is a mouse press, the Scroll is the scroll with a mouse, the unpress is when the mouse is released, itemdropped is when you drag a item into the window and key is a keyboard press. To obtain which signals have been propagated to our window we can query the internal buffer of the window through the call 
 
-# Buttons
+```cpp
+auto signals = viewer->process_pending_signals();
+```
+
+## Buttons
 
 This while loop runs until the window is closed. Now obviously you don't want to program all types of objects like buttons and so on, everytime you want this type of behavior. Curan has a light Widget implementation which you can use for your goals. Lets see how curan goes about defining this widget behavior
 
@@ -632,7 +632,7 @@ This results in the following
 
 Now obviously there are more widgets which are usefull in this context. For example in the context of Curan, it is extremelly important to draw an image which we received from a peripheral at a constant framerate. To do this we developed the ImageDisplay class. 
 
-# ImageDisplay
+## ImageDisplay
 
 Assume that you are testing an algorithm and just want to see how the image looks. Well for that we can define the ImageDisplay class and a single container which completly fills our Page as follows.
 
