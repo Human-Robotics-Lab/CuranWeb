@@ -1226,6 +1226,10 @@ return 0;
 }
 ```
 
+## Add your own custom protocol to the library
+
+Once you start developing a larger application, the need arises to deal with third-party protocols, e.g. DICOM, which we would need to 
+
 ### Image-Processing
 
 This portion is still in development... TODO
