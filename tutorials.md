@@ -426,10 +426,18 @@ the first object of the type curan::ui::Context basically establishes a link to 
 		auto start = std::chrono::high_resolution_clock::now();
 		SkSurface* pointer_to_surface = viewer->getBackbufferSurface();
 		SkCanvas* canvas = pointer_to_surface->getCanvas();
-		canvas->drawColor(SK_ColorWHITE);
-			
-        //do your own things
+```
 
+first you can check if the viewer has received an external request to terminate. If it has then you should get out of the loop so that the window can close properly. If it has not then we can continue with our custom rendering logic. The underlying library we are using to render things on screen is SKIA, which we can do thourhg the canvas pointer. For more information please visit this [website](https://skia.org/docs/user/api/skcanvas_overview/). 
+
+```cpp
+        //do your own things
+		canvas->drawColor(SK_ColorWHITE);
+```
+
+here is where we would draw our 2D figures as needed for our application, SKIA gives you a lot of freedom on how to render things on screen. You could draw boxes with text, which we could call buttons, we could draw images, etc... Later we will show you the abstractions we created to save you some of this bottersome work. 
+
+```cpp
 		glfwPollEvents();
 		auto signals = viewer->process_pending_signals();
 		bool val = viewer->swapBuffers();
@@ -442,11 +450,9 @@ the first object of the type curan::ui::Context basically establishes a link to 
 }
 ```
 
-This source code creates a window through the [GLFW library](https://www.glfw.org/) which appends signals to the 'std::unique_ptr<Window> viewer' object. The types of signals Curan propagates are Empty,Move, Press, Scroll, Unpress, ItemDropped, Key. The move is a mouse movement, the Press is a mouse press, the Scroll is the scroll with a mouse, the unpress is when the mouse is released, itemdropped is when you drag a item into the window and key is a keyboard press. To obtain which signals have been propagated to our window we can query the internal buffer of the window through the call 
+This last portion of the code queries the underlying window of the operating system for signals which where receives whilst we were drawing our scene, (in detail the glfwPollEvents() call takes the signal received and places it in a queue of the viewer object for later pos-processing).
 
-```cpp
-auto signals = viewer->process_pending_signals();
-```
+This source code creates a window through the [GLFW library](https://www.glfw.org/) which appends signals to the 'std::unique_ptr<Window> viewer' object. The types of signals Curan propagates are Empty,Move, Press, Scroll, Unpress, ItemDropped, Key. The move is a mouse movement, the Press is a mouse press, the Scroll is the scroll with a mouse, the unpress is when the mouse is released, itemdropped is when you drag a item into the window and key is a keyboard press. To obtain which signals have been propagated to our window we can query the internal buffer of the window through the call 
 
 ## Buttons
 
