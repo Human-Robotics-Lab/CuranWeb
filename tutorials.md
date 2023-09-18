@@ -31,9 +31,9 @@ utils
 
 This code signals to CMake that our target depends on utils and when we compile it we must have the relative paths to both the include directories and the library files of the utils target. Now we will introduce a bit of the library for you to get a better graps of when and where to use it.
 
-* SafeQueue : [SafeQueue](#SafeQueue)
-* ThreadPool and Jobs : [ThreadPool and Jobs](#ThreadPool and Jobs)
-* Flags : [Flags](#Flags)
+* SafeQueue : [SafeQueue](#safequeue)
+* ThreadPool and Jobs : [ThreadPool and Jobs](#threadpool-and-jobs)
+* Flags : [Flags](#flags)
 
 ## SafeQueue
 
@@ -264,22 +264,16 @@ Here is how one might try and implement this solution
 
 ```cpp 
 
-#include "itkImage.h"
-
-using PixelType = unsigned char;
-using Dimension = 2;
-using ImageType = itk::Image<PixelType, Dimension>;
-
-ImageType::Pointer magicfunction_returns_image();
-void slow_image_filter(ImageType::Pointer);
+std::vector<double> function_returns_vector();
+void slow_post_processing_function(std::vector<double>);
 
 int main(){
     bool continue_running = true;
     std::vector<std::thread> list_of_threads_running;
     while(continue_running){
-        ImageType::Pointer image = magicfunction_returns_image();
-        if(image.get()!=nullptr)
-            list_of_threads_running.emplace_back(std::thread(slow_image_filter(image)));
+        auto vector = magicfunction_returns_vector();
+        if(vector.size()!=0)
+            list_of_threads_running.emplace_back(std::thread(slow_post_processing_function(vector)));
         else
             continue_running = false;
     }
@@ -316,7 +310,7 @@ int main(){
             continue;
         }
         curan::utilities::Job job_to_execute;
-	job_to_execute.description = "Job to execute";
+	    job_to_execute.description = "Job to execute";
         job_to_execute.function_to_execute = [image]() {
             slow_image_filter(image);
 	    };
