@@ -463,12 +463,13 @@ To sum up, the previous source code creates a window through the [GLFW library](
 
 This while loop runs until the window is closed. Now obviously you don't want to program all types of objects like buttons and so on, everytime you want this type of behavior. Curan has a light Widget implementation which you can use for your goals. Lets see how curan goes about defining this widget behavior
 
-Assume that you want three buttons all with distict behavior:
-1. Button 1 - name "print name" execution "prints a name when clicked"
+Assume that you want three buttons all with distict behaviors:
 
-2. Button 2 - name "print age" execution "prints an age when clicked"
+1. Button 1 - name "print name" which prints a name when clicked on the output stream
 
-3. Button 3 - name "print Eureka" execution "prints Eureka when clicked"
+2. Button 2 - name "print age" which prints an age when clicked on the output stream
+
+3. Button 3 - name "print Eureka" which prints a Eureka when clicked on the output stream
 
 Further notice that we would like to control the colors when we are hovering with the mouse, when we click the button and while nothing is interacting with the button. This is controlled through the Button::Info structure feed into the constructor of Button. We would also like Button 1 to be above button 2 and these two are on the left side of button 3. To achieve this we must first create the buttons as follows
 
