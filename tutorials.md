@@ -439,6 +439,11 @@ here is where we would draw our 2D figures as needed for our application, SKIA g
 
 ```cpp
 		glfwPollEvents();
+```
+
+This last portion of the code queries the underlying window of the operating system for signals which where receives whilst we were drawing our scene, (in detail the glfwPollEvents() call takes the signal received and places it in a queue of the viewer object for later pos-processing).  
+
+```cpp
 		auto signals = viewer->process_pending_signals();
 		bool val = viewer->swapBuffers();
 		if (!val)
@@ -450,9 +455,9 @@ here is where we would draw our 2D figures as needed for our application, SKIA g
 }
 ```
 
-This last portion of the code queries the underlying window of the operating system for signals which where receives whilst we were drawing our scene, (in detail the glfwPollEvents() call takes the signal received and places it in a queue of the viewer object for later pos-processing).
+The last portion of the code takes the signals placed in the interal queue of the viewer for our custom logic. Notice that you could use these signals for some custom behavior of your application, e.g. detect if an item has been drag and dropped. 
 
-This source code creates a window through the [GLFW library](https://www.glfw.org/) which appends signals to the 'std::unique_ptr<Window> viewer' object. The types of signals Curan propagates are Empty,Move, Press, Scroll, Unpress, ItemDropped, Key. The move is a mouse movement, the Press is a mouse press, the Scroll is the scroll with a mouse, the unpress is when the mouse is released, itemdropped is when you drag a item into the window and key is a keyboard press. To obtain which signals have been propagated to our window we can query the internal buffer of the window through the call 
+To sum up, the previous source code creates a window through the [GLFW library](https://www.glfw.org/) which appends signals to the 'std::unique_ptr<Window> viewer' object. The types of signals Curan propagates are Empty,Move, Press, Scroll, Unpress, ItemDropped, Key. The move is a mouse movement, the Press is a mouse press, the Scroll is the scroll with a mouse, the unpress is when the mouse is released, itemdropped is when you drag a item into the window and key is a keyboard press. To obtain which signals have been propagated to our window we can query the internal buffer of the window.
 
 ## Buttons
 
