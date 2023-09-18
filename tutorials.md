@@ -427,7 +427,6 @@ int main() {
 
 the first object of the type curan::ui::Context basically establishes a link to your GPU, so that we can use Vulkan under the hood to render our application blazing fast. The constructor of the class creates the necessary abstractions and when it is deleted the vulkan objects are deleated in the proper order. The DisplayParams object defines the size of the window and receives the unique pointer of the context object. This object is unique, meaning that only a single instance exists, i.e. when you can the std::move() function the context object is no longer usable in your code because it is now a member of the param object.
 
-
 ```cpp
 	while (!glfwWindowShouldClose(viewer->window)) {
 		auto start = std::chrono::high_resolution_clock::now();
