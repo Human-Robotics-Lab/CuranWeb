@@ -1,4 +1,6 @@
-### Communication
+---
+title: Communication
+---
 
 The communication library is probably the hardest library to undestand out of all our libraries currently. Thats because we use heavily asyncronous code which is always hard to make sure that no bugs exist in our code. To link the Communcation library in your executable this is how you procede in cmake. 
 

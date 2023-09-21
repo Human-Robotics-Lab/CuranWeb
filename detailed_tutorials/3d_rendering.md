@@ -1,4 +1,6 @@
-### 3D-Rendering
+---
+title: 3D-Rendering
+---
 
 One very interesting tools which is always usefull while using robots and other sensors which can interact in real time is to be able to render 3D scenes. As always we first see how we can link our executable to the 3D rendering library.
 

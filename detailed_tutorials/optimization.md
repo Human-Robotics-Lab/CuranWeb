@@ -1,4 +1,6 @@
-### Optimization
+---
+title: Optimization
+---
 
 ```cmake
 add_executable(myexecutable main.cpp)
