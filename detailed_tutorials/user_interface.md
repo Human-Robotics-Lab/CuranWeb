@@ -1,6 +1,9 @@
 ---
-title: User-Interface
+layout: "page"
+permalink : "/user_interface/"
 ---
+
+### User Interface
 
 The user interface library is build upon [SKIA](https://skia.org/). This is a great library in cpp which renders geometries, images, paths, and many other geometries. Check the SKIA [API](https://skia.org/docs/user/api/) to see what is possible. The main thing you need to understand is that Curan only executes the connection between the GPU and your CPU, all other things are taken care of by SKIA. 
 
@@ -235,7 +238,7 @@ return 0;
 ```
 
 This is the result of all of our hard work
-![buttons_container](assets/images/buttons_container.png)
+![buttons_container](/assets/images/buttons_container.png)
 
 Altough its a bit anoying that the lettering type is too small. Well no problem, in our Button we can custumize the size of the type of letter to be larger, (the default is 15) and you can also customize the type of lettering used!, lets change that from 15 to 30 as follows
 
@@ -258,7 +261,7 @@ button3->set_callback([](Button* button,ConfigDraw* config){
 ```
 
 This results in the following 
-![buttons_larger_letter_type](assets/images/buttons_larger_letter_type.png)
+![buttons_larger_letter_type](/assets/images/buttons_larger_letter_type.png)
 
 Now obviously there are more widgets which are usefull in this context. For example in the context of Curan, it is extremelly important to draw an image which we received from a peripheral at a constant framerate. To do this we developed the ImageDisplay class. 
 

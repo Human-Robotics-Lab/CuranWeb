@@ -1,6 +1,9 @@
 ---
-title: Optimization
+layout: "page"
+permalink : "/optimization/"
 ---
+
+### Optimization
 
 ```cmake
 add_executable(myexecutable main.cpp)
