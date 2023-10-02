@@ -1,6 +1,6 @@
 ---
 layout: "page"
-permalink : "/3d_rendering/"
+permalink: "/3d_rendering/"
 ---
 
 ### 3D Rendering

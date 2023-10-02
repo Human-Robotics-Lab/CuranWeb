@@ -1,6 +1,6 @@
 ---
 layout: "page"
-permalink : "/communication/"
+permalink: "/communication/"
 ---
 
 ### Communication
