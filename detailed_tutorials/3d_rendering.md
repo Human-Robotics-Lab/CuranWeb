@@ -1,5 +1,5 @@
 ---
-layout: "page"
+layout: "default"
 permalink : "/3d_rendering/"
 ---
 
