@@ -33,6 +33,7 @@ plugins:
 
 header_pages:
   - get_started.md
+  - screenshots.md
   - tutorials.md
   - about.md
 
