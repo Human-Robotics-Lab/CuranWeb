@@ -1,7 +1,7 @@
 ---
 layout: "page"
 title : "Build Instructions"
-permalink: "/build_intructions/"
+permalink: /get_started/
 ---
 
 ## Download and Set up

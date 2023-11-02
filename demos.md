@@ -1,7 +1,7 @@
 ---
 layout: "page"
 title: "Demos" 
-permalink: /screenshots/
+permalink: /demos/
 ---
 
 Here are some of the things that Curan can do for you!
