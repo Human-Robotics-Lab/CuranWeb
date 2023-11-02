@@ -31,7 +31,7 @@ theme: minima
 plugins:
   - jekyll-feed
 
-header_files:
+header_pages:
   - get-started.md
   - tutorials.md
   - about.md
