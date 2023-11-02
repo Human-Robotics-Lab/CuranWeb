@@ -32,10 +32,10 @@ plugins:
   - jekyll-feed
 
 header_pages:
+  - index.md
   - get-started.md
   - tutorials.md
   - about.md
-  - index.md
 
 # Exclude from processing.
 # The following items will not be processed, by default.
