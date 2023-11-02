@@ -32,8 +32,7 @@ plugins:
   - jekyll-feed
 
 header_pages:
-  - index.md
-  - get-started.md
+  - get_started.md
   - tutorials.md
   - about.md
 
