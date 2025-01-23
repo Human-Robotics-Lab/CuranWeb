@@ -1,0 +1,9 @@
+---
+layout: post
+title:  "Introduction to unit tests"
+date:   2025-01-22 13:48:03 +0100
+categories: curan update
+---
+
+We have added unit testing to Curan. This brings the project closer to something that can be used in clinical contexts. Currently we are also revamping more tutorials, and videos 
+demostrating the novelties introduced by this navigation system. 

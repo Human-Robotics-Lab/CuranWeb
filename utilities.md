@@ -3,7 +3,7 @@ layout: "default"
 permalink : "/utilities/"
 ---
 
-### Utilities
+# Utilities
 
 The utilities library is contained in the Curan API is located in the library folders in the utils folder. In CMAKE the target of the library is 'utils' and tu use it you can define a CMakeLists.txt with the following content 
 
@@ -17,351 +17,650 @@ utils
 
 This code signals to CMake that our target depends on utils and when we compile it we must have the relative paths to both the include directories and the library files of the utils target. Now we will introduce a bit of the library for you to get a better graps of when and where to use it.
 
-* SafeQueue : [SafeQueue](#safequeue)
+## Index
+
 * ThreadPool and Jobs : [ThreadPool and Jobs](#threadpool-and-jobs)
-* Flags : [Flags](#flags)
+* SafeQueue : [SafeQueue](#safequeue) 
+* MemoryUtils : [MemoryUtils](#memoryutils)
+* DateManipulation : [DateManipulation](#datemanipulation)
+* FileStructures : [FileStructures](#filestructures)
+* Logger(todo) : [Logger](#Logger)
+* Reader(todo) : [Reader](#Reader)
+* StringManipulation(todo) : [StringManipulation](#StringManipulation)
 
-## SafeQueue
-
-Assume that you have two functions, one which reads input from the keyboard and commands how large the gains of your controller (lets call this function foo) and another that establishes a serial connection with an arduino where you send the control commands in real time (bar function) and you want to use the information from the first function to update the controllers of the second. 
-
-```cpp
-#include <iostream>
-#include <asio.hpp>
-
-int foo();
-int bar();
-
-int main(){
-    std::thread io_thread{foo};
-    bar();
-    io_thread.join();
-    return 0;
-}
-
-```
-
-Where the source code of the foo function is given by 
-
-```cpp
-int foo(){
-    char input;
-    while(true){
-        std::cin >> input; //this call blocks until input is provided
-        switch(input){
-            case 'a': //agressive -> gain 3
-            break;
-            case 's': //smooth -> gain 1
-            break;
-            case 'x': //stop control
-            break;
-            default: //do nothing
-            break;
-        }
-    }
-}
-```
-
-and the bar function is given by 
-
-```cpp
-int bar(){
-    double control_law;
-    while(true){
-        //we need to check if our agressive control law must change or not 
-        //change control_law
-    }
-}
-```
-
-How would you establish the communication between these two functions?
-You could develop a atomic flag which signals when something has changed in one thread and read a value when this flag is changed, i.e.
-
-```cpp
-int foo(std::atomic<bool>& flag_to_signal,double* value){
-    char input;
-    while(true){
-        std::cin >> input; //this call blocks until input is provided
-        switch(input){
-            case 'a': //agressive -> gain 3
-            *value = 3;
-            flag_to_signal.store(true);
-            break;
-            case 's': //smooth -> gain 1
-            *value = 1;
-            flag_to_signal.store(true);
-            break;
-            case 'x': //stop control
-            flag_to_signal.store(true);
-            *value = 0;
-            break;
-            default: //do nothing
-            break;
-        }
-    }
-}
-```
-
-```cpp
-int bar(std::atomic<bool>& flag_to_signal,double* value){
-    double control_law;
-    while(true){
-        if(flag_to_signal.load()){
-            flag_to_signal.store(false);
-            control_law = *value;
-            if(control_law==0){ //x was pressed we need to stop
-                return 1;
-            }
-        }
-    }
-}
-```
-
-And your main function is something similar to 
-
-
-```cpp
-#include <iostream>
-#include <asio.hpp>
-
-int foo();
-int bar();
-
-int main(){
-    //atomic variable
-    std::atomic<bool> signal_flag = false;
-    //the memory of our shared variable is stored in the stack of the main function
-    double gain_value = 1.0; 
-    // this is a lambda that captures our values (gain_value and signal_flag) by reference
-    //  and uses them at a later point in time
-    auto callable = [&gain_value,&signal_flag](){ foo(signal_flag,&gain_value); }; 
-    // we launch a thread which will execute our lambda
-    std::thread io_thread{callable};
-    //we can now call our bar function repeatadly
-    bar(signal_flag,&gain_value);
-    //we need to block for the io_thread to properly exit the program
-    io_thread.join();
-    return 0;
-}
-
-```
-
-This almost works, there is a bug hidden in the example. Because we are acessing the control_law double memory location from both threads we have a [race condition](https://en.wikipedia.org/wiki/Race_condition) (to understand the read the [cpp memory model](https://en.cppreference.com/w/cpp/language/memory_model)).
-
-A brief explaination is that you have a double in memory (a double are 8 bytes / 64 bits)
-```
-01010101 01010101 01010101 01010101 01010101 01010101 01010101 01010101
-```
-The function foo signals the bar function through the atomic flag that you need to start reading our value. The thead running the bar function reads the first 4 bytes
-```
-01010101 01010101 01010101 01010101 01010101 01010101 01010101 01010101
-----------------------------------
-          these ones
-```
-and you press a key in the meantime, the thread running the function foo could wake up and change the bytes in the mean time to
-```
-11100111 11100111 11100111 11100111 11100111 11100111 11100111 11100111 
-```
-and when the bar function wakes up it will read the remaining four bytes 
-
-
-```
-11100111 11100111 11100111 11100111 11100111 11100111 11100111 11100111 
-                                    ----------------------------------
-                                                these ones
-```
-Thus from the perspective of the bar function the double read was 
-```
-double read by bar
-01010101 01010101 01010101 01010101 11100111 11100111 11100111 11100111 
-
-initial double
-01010101 01010101 01010101 01010101 01010101 01010101 01010101 01010101
-
-double written by foo 
-11100111 11100111 11100111 11100111 11100111 11100111 11100111 11100111 
-```
-
-Notice that the read double has no correlation with any of the two doubles which we wrote from the foo function. To avoid this, the double variable should also be atomic to guarantee that changes are updated in a single shot. As you can see, designing memory safe code is dificult and requires constant attention. 
-
-To deal with these problems curan proposes the class 'SafeQueue' which is basically a queue which we can put things into and request to pull things out of as needeed with guaranteed memory safety. 
-
-```cpp
-#include "utilities/SafeQueue.h"
-
-int foo(curan::utilitites::SafeQueue<double>& queue){
-    char input;
-    while(true){
-        std::cin >> input; //this call blocks until input is provided
-        switch(input){
-            case 'a': //agressive -> gain 3
-                queue.push(3.0);
-            break;
-            case 's': //smooth -> gain 1
-                queue.push(1.0);
-            break;
-            case 'x': //stop control
-                queue.push(0.0);
-                return 0;
-            break;
-            default: //do nothing
-            break;
-        }
-    }
-}
-```
-
-```cpp 
-#include "utilities/SafeQueue.h"
-int bar(curan::utilitites::SafeQueue<double>& queue){
-    double control_law;
-    while(true){
-        if(!queue.wait_and_pop(control_law) || control_law==0){ //x was pressed we need to stop
-            return 1;
-        }
-    }
-}
-```
-
-```cpp
-#include "utilities/SafeQueue.h"
-
-int foo(curan::utilitites::SafeQueue<double>& queue);
-
-int bar(curan::utilitites::SafeQueue<double>& queue);
-
-int main(){
-    curan::utilitites::SafeQueue<double> queue;
-    std::thread io_thread{foo(queue)};
-    bar(queue);
-    io_thread.join();
-    return 0;
-}
-
-```
-
-This solution reduces code size and guarantees that reading and writing to the queue is safe across threads.
+# Tutorials
 
 ## ThreadPool and Jobs
 
-Now lets look at another handy tool in curan which you might need to use in your code. You have an operation which might take a long time, e.g. image prcessing, and as soon as you receive an image you want to launch a thread to process this task whilst dealing with other things, you don't want to wait for the operation to finish in your main thread. 
+The full source code of the following tutorial is shown next. We will explain line by line what each 
+abstraction does. 
+ 
+```cpp
+#include <iostream>
+#include "utils/TheadPool.h"
 
-Here is how one might try and implement this solution
+void thread_pool_tutorial(){
+    using namespace curan::utilities;
+    std::atomic<size_t> value = 0;
+    Job job{"increment value",[&](){++value;}};
+    std::cout << "the description should be the same: (expected \"increment value\")" << job.description() << std::endl ;
+    std::cout << "the value should be 0: "<< value << std::endl ;
+    job();
+    std::cout << "the value should be 1: "<< value << std::endl ;
+    job();
+    std::cout << "the value should be 2: "<< value << std::endl ;
+    job();
+    std::cout << "the value should be 3: "<< value << std::endl ;
+    job();
+    std::cout << "the value should be 4: "<< value << std::endl ;
+    {
+        value = 0;
+        auto pool = ThreadPool::create(1,TERMINATE_ALL_PENDING_TASKS);
+        for(size_t i = 0; i < 100; ++i)
+            pool->submit(job);
+    } // ~pool() is called here
+    std::cout << "the value should be 99: "<< value << std::endl ;
+    {
+        value = 0;
+        auto pool = ThreadPool::create(1,RETURN_AS_FAST_AS_POSSIBLE);
+        for(size_t i = 0; i < 100; ++i)
+            pool->submit("increment value",[&](){std::this_thread::sleep_for(std::chrono::microseconds(1));++value;});
+        std::this_thread::sleep_for(std::chrono::microseconds(50));
+    } // ~pool() is called here
+    std::cout << "the value should be smaller than 99: "<< value << std::endl ;
+}
+```
 
-```cpp 
+We start by providing the necessary include directories 
 
-std::vector<double> function_returns_vector();
-void slow_post_processing_function(std::vector<double>);
+```cpp
+#include <iostream>
+#include "utils/TheadPool.h"
+```
 
-int main(){
-    bool continue_running = true;
-    std::vector<std::thread> list_of_threads_running;
-    while(continue_running){
-        auto vector = magicfunction_returns_vector();
-        if(vector.size()!=0)
-            list_of_threads_running.emplace_back(std::thread(slow_post_processing_function(vector)));
-        else
-            continue_running = false;
+we also employ the using directive to reduce the typing required 
+
+```cpp
+using namespace curan::utilities;
+```
+
+the manipulated variable with the Jobs class will be an atomic variable which we will increment. It should be atomic so as to guarantee that 
+data is always in a consistent state, e.g., we avoid race conditions. 
+
+```cpp
+std::atomic<size_t> value = 0;
+```
+
+because jobs are running on a thread pool (more on that later) it is useful to attach string descriptors to each job.
+We can hence query for the description of the task for a particular job. 
+
+```cpp
+Job job{"increment value",[&](){++value;}};
+std::cout << "the description should be the same: (expected \"increment value\")" << job.description() << std::endl ;
+```
+
+note that the job takes a lambda that increments, by reference, the values that begins at zero. This means that we can 
+increment it everytime the operator() is called.
+
+```cpp
+std::cout << "the value should be 0: "<< value << std::endl ;
+job();
+std::cout << "the value should be 1: "<< value << std::endl ;
+job();
+std::cout << "the value should be 2: "<< value << std::endl ;
+job();
+std::cout << "the value should be 3: "<< value << std::endl ;
+job();
+std::cout << "the value should be 4: "<< value << std::endl ;
+```
+
+now we finaly focus our attention on the most important concept, ThreadPools. A thread pool is 
+an aglomeration of threads that can execute jobs anytime, anywhere. As a design choise we allow
+the developer to specify how many threads a particular ThreadPool allocated. Once the ThreadPool
+destructor is called there are two possible customizable behaviors. Assume that your ThreadPool
+has a single thread. If 100 jobs are submited, as shown next
+
+```cpp
+{
+    value = 0;
+    auto pool = ThreadPool::create(1,TERMINATE_ALL_PENDING_TASKS);
+    for(size_t i = 0; i < 100; ++i)
+        pool->submit(job);
+} // ~pool() is called here
+std::cout << "the value should be 99: "<< value << std::endl ;
+```
+
+the destructor of the pool will be called before the ThreadPool executes all submited jobs. Thus we are faced with 
+a choice, we either block on the destructor untill all jobs have been executed, or we return as soon as we can. In the 
+previous code we requested from the constructor to terminate all pending tasks, thus the line "// ~pool() is called here"
+will be blocking until value is 99. On the other hand, we can request to return as fast as possible through the following code listing
+
+```cpp
+{
+    value = 0;
+    auto pool = ThreadPool::create(1,RETURN_AS_FAST_AS_POSSIBLE);
+    for(size_t i = 0; i < 100; ++i)
+        pool->submit("increment value",[&](){std::this_thread::sleep_for(std::chrono::microseconds(1));++value;});
+    std::this_thread::sleep_for(std::chrono::microseconds(50));
+} // ~pool() is called here
+std::cout << "the value should be smaller than 99: "<< value << std::endl ;
+```
+
+note that in this case line "// ~pool() is called here" is blocking until the current jobs, in this case one because there is a single 
+thread, terminate their task, and we ignore all pending work. 
+
+## SafeQueue
+
+The full source code of the following tutorial is shown next. We will explain line by line what each 
+abstraction does. 
+ 
+```cpp
+#include <iostream>
+#include "utils/SafeQueue.h"
+
+void safe_queue_tutorial(){
+    using namespace curan::utilities;
+    SafeQueue<std::string> queue;
+    auto pool = ThreadPool::create(1,TERMINATE_ALL_PENDING_TASKS);
+    pool->submit("string submission",[&](){std::this_thread::sleep_for(std::chrono::milliseconds(50)); queue.push("osifhm9xq904rsdfsdcvw4tererge55gdfgx0");});
+    auto value = queue.wait_and_pop(std::chrono::milliseconds(100));
+    std::cout << ( value ? "the string (expected \"osifhm9xq904rsdfsdcvw4tererge55gdfgx0\")in the queue is:" + *value :  "no string was received (unexpected)" ) << std::endl;
+    pool->submit("string submission",[&](){std::this_thread::sleep_for(std::chrono::milliseconds(500)); queue.push("osifhm9xq904rsdfsdcvw4tererge55gdfgx0");});
+    value = queue.wait_and_pop(std::chrono::milliseconds(100));
+    std::cout << ( value ? "this case should never happen" + *value :  "expected no value due to timing" ) << std::endl;
+    value = queue.try_pop();
+    std::cout << ( value ? "this case should never happen" + *value :  "expected no value due to timing" ) << std::endl;
+    queue.emplace("osifhm9xq904rsdfsdcvw4tererge55gdfgx0");
+    value = queue.try_pop();
+    std::cout << ( value ? "the string (expected \"osifhm9xq904rsdfsdcvw4tererge55gdfgx0\")in the queue is:" + *value :  "no string was received (unexpected)" ) << std::endl;
+}   
+```
+
+We start by providing the necessary include directories 
+
+```cpp
+#include <iostream>
+#include "utils/SafeQueue.h"
+```
+
+we also employ the using directive to reduce the typing required 
+
+```cpp
+using namespace curan::utilities;
+```
+
+now we create the safe queue and a threadpool. We then commit a function that first waits 50 milliseconds and then pushes a string unto the queue.
+
+```cpp
+SafeQueue<std::string> queue;
+auto pool = ThreadPool::create(1,TERMINATE_ALL_PENDING_TASKS);
+pool->submit("string submission",[&](){std::this_thread::sleep_for(std::chrono::milliseconds(50)); queue.push("osifhm9xq904rsdfsdcvw4tererge55gdfgx0");});
+```
+
+we then submit a blocking request where we wait at a maximum 100 milliseconds for someone to submit a string to our queue. Notice that the function will only block 
+for 50 milliseconds and not 100 milliseconds because someone submits a string 50 ms later. 
+
+```cpp
+auto value = queue.wait_and_pop(std::chrono::milliseconds(100));
+std::cout << ( value ? "the string (expected \"osifhm9xq904rsdfsdcvw4tererge55gdfgx0\")in the queue is:" + *value :  "no string was received (unexpected)" ) << std::endl;
+```
+
+on the other hand, if the submission takes longer than 100 ms, in the following case 500 ms, then the wait_and_pop function returns a null optional. 
+
+```cpp
+pool->submit("string submission",[&](){std::this_thread::sleep_for(std::chrono::milliseconds(500)); queue.push("osifhm9xq904rsdfsdcvw4tererge55gdfgx0");});
+value = queue.wait_and_pop(std::chrono::milliseconds(100));
+std::cout << ( value ? "this case should never happen" + *value :  "expected no value due to timing" ) << std::endl;
+```
+
+on certain applications, we might not wish to wait for any time, either because waiting adds latency or due to some other requirement. In this case we can
+try to get an instantaneous snapshot that either returns a string or a empty optional. Because we always remove a string when we read from the queue the 
+previous function calls, the queue is currently empty at this point in the code, thus the code will return an empty optional
+
+```cpp
+value = queue.try_pop();
+std::cout << ( value ? "this case should never happen" + *value :  "expected no value due to timing" ) << std::endl;
+```
+
+on the following snippet of code we demonstrate that try pop also returns a string 
+
+```cpp
+queue.emplace("osifhm9xq904rsdfsdcvw4tererge55gdfgx0");
+value = queue.try_pop();
+std::cout << ( value ? "the string (expected \"osifhm9xq904rsdfsdcvw4tererge55gdfgx0\")in the queue is:" + *value :  "no string was received (unexpected)" ) << std::endl;
+```
+
+## MemoryUtils
+
+The full source code of the following tutorial is shown next. We will explain line by line what each 
+abstraction does. 
+ 
+```cpp
+#include <iostream>
+#include "utils/MemoryUtils.h"
+
+bool comparator(const std::string &value_to_control, const std::shared_ptr<curan::utilities::MemoryBuffer> &buffer){
+  size_t address = 0;
+  for (auto begin = buffer->begin(); begin != buffer->end(); ++begin)
+    for (size_t j = 0; j < begin->size(); ++j, ++address)
+      if (value_to_control.at(address) != *(((const char *)begin->data()) + j))
+        return false;
+  return true;
+};
+
+void memory_utils_tutorial(){
+using namespace curan::utilities;
+{
+  std::string mem = "osifhm9xq904rsdfsdcvw4tererge55gdfgx0";
+  // the copy buffer receives an pointer and the size of data to be copied and does so promply
+  auto buffer = CopyBuffer::make_shared(mem.data(), mem.size());
+  std::cout << "the buffers should be the same: " << comparator(mem,buffer) << std::endl;
+  mem[0] = 'a';
+  std::cout << "the buffers should not be the same: " << comparator(mem,buffer) << std::endl;
+}
+
+{
+  auto mem = std::make_shared<std::string>("osifhm9xq904rsdfsdcvw4tererge55gdfgx0");
+  // the copy buffer receives an pointer and the size of data to be copied and does so promply
+  auto buffer = CaptureBuffer::make_shared(mem->data(), mem->size(),mem);
+  std::cout << "the buffers should be the same: " << comparator(*mem,buffer) << std::endl;
+  mem->data()[0] = 'a';
+  std::cout << "the buffers should still be the same: " << comparator(*mem,buffer) << std::endl;
+}
+}
+```
+
+We start by providing the necessary include directories 
+
+```cpp
+#include <iostream>
+#include "utils/MemoryUtils.h"
+```
+
+first we define a function that takes a string and a curan memory buffer and returns the comparison result byte by byte. This is 
+useful for demonstrative purpouses. 
+
+```cpp
+bool comparator(const std::string &value_to_control, const std::shared_ptr<curan::utilities::MemoryBuffer> &buffer){
+  size_t address = 0;
+  for (auto begin = buffer->begin(); begin != buffer->end(); ++begin)
+    for (size_t j = 0; j < begin->size(); ++j, ++address)
+      if (value_to_control.at(address) != *(((const char *)begin->data()) + j))
+        return false;
+  return true;
+};
+```
+
+we also employ the using directive to reduce the typing required 
+
+```cpp
+using namespace curan::utilities;
+```
+
+now we first create a blob of memory [0 37] bytes
+
+```cpp
+std::string mem = "osifhm9xq904rsdfsdcvw4tererge55gdfgx0";
+```
+
+and we wish to pass this blob of memory from thread 1 to thread 2. 
+Note that if after line "std::cout << "the buffers should not be the same: " << comparator(mem,buffer) << std::endl;"
+the mem string is destroyed, its usefull to decouple the lifetime of the blob of memory from our buffer. For this purpouse 
+we use a CopyBuffer. This class takes a const char* pointer and allocates internally a new buffer [38 75] bytes in lenght
+and copy the data from mem into buff. 
+
+```cpp
+// the copy buffer receives an pointer and the size of data to be copied and does so promply
+auto buffer = CopyBuffer::make_shared(mem.data(), mem.size());
+```
+
+note that if we compare the memory contents of both buffers they are equivalent, because they were just copied from one to the other
+
+```cpp
+std::cout << "the buffers should be the same: " << comparator(mem,buffer) << std::endl;
+```
+
+now because these buffers are independent, if we change mem, then the comparison will no longer hold true
+
+```cpp
+mem[0] = 'a';
+std::cout << "the buffers should not be the same: " << comparator(mem,buffer) << std::endl;
+```
+
+## DateManipulation
+
+The full source code of the following tutorial is shown next. We will explain line by line what each 
+abstraction does. 
+ 
+```cpp
+#include <iostream>
+#include "utils/DateManipulation.h"
+
+void date_manipulation_tutorial(){
+    using namespace curan::utilities;
+    auto date = formated_date<std::chrono::system_clock>(std::chrono::system_clock::time_point(std::chrono::system_clock::duration(0)));
+    std::cout << "the computed date with the provided time point is (expected \"1970-01-01 00:00:00\"):" << date  << std::endl;
+}
+```
+
+We start by providing the necessary include directories 
+
+```cpp
+#include <iostream>
+#include "utils/TheadPool.h"
+```
+
+we also employ the using directive to reduce the typing required 
+
+```cpp
+using namespace curan::utilities;
+```
+
+the formated_date is a templated function that receives the type of the clock we wish to use associated with a timepoint 
+measured in the templated type of clock. The function returns a string with this formated type
+
+```cpp
+auto date = formated_date<std::chrono::system_clock>(std::chrono::system_clock::time_point(std::chrono::system_clock::duration(0)));
+```
+
+for sanity sake, we print the date, which is associated with the UNIX begining of time 1970-01-01 00:00:00
+
+```cpp
+std::cout << "the computed date with the provided time point is (expected \"1970-01-01 00:00:00\"):" << date  << std::endl;
+```
+
+## FileStructures
+
+The full source code of the following tutorial is shown next. We will explain line by line what each 
+abstraction does. 
+
+```cpp
+#include <iostream>
+#include "utils/FileStructures.h"
+
+template <typename T>
+T parse_from_file(std::istream &instream)
+{
+    T file_encoding{instream};
+    return file_encoding;
+}
+
+std::istream print_to_file(auto type)
+{
+    std::stringstream mock_file_in_disk;
+    mock_file_in_disk << type;
+    return mock_file_in_disk;
+}
+
+void file_structure_tutorial()
+{
+    using namespace curan::utilities;
+    auto creation_data = formated_date<std::chrono::system_clock>(std::chrono::system_clock::now());
+
+    {
+        UltrasoundCalibrationData data{creation_data, Eigen::Matrix<double, 4, 4>::Identity(), 0.0};
+        std::cout << "(original  ) ultrasound calibration data: \n"
+                  << data << std::endl;
+        auto mock_file_in_disk = print_to_file(data);
+        auto copydata = parse_from_file<UltrasoundCalibrationData>(mock_file_in_disk);
+        std::cout << "(replication) ultrasound calibration data: \n"
+                  << copydata << std::endl;
     }
-    for(auto & thread : list_of_threads_running)
-        thread.join();
-    return 0;
-}
-```
-We keep looping and getting more images and our slow filter takes these images and is started on a parallel thread which runs our task. This solution has several problems, namely, the number of threads we create is unlimited, which is not always want we want. Remember that your core has a finite number of cores and at some point you will create too many threads which the kernel of the operating system might need to switch between (which takes time). The other drawback of the tecnique is that creating a thread is an "expensive" operation. This is where thread pools come into play.
-What if you create a pool of prealocated threads and give them the task you wish to execute? This number of threads would be limited and you would not pay for the creation of the threads as the while loop runs. 
 
-To achieve this solution curan has the concept of a Job. A job contains a description of the task being executed and a [lambda](https://en.cppreference.com/w/cpp/language/lambda) which captures our local variables that we want to use in the future. Inside this lambda we provide it with a copy of the pointer to our image and we call our slow filter. Once the while filter is finished we terminate the thread pool. If you are curious, check how the thread pool is implemented. Its not that difficult to understand.
-
-```cpp
-
-#include "itkImage.h"
-
-using PixelType = unsigned char;
-using Dimension = 2;
-using ImageType = itk::Image<PixelType, Dimension>;
-
-ImageType::Pointer magicfunction_returns_image();
-void slow_image_filter(ImageType::Pointer);
-
-int main(){
-    //initualize the thread pool;
-	curan::utilities::initialize_thread_pool(10);
-    bool continue_running = true;
-    
-    while(continue_running){
-        ImageType::Pointer image = magicfunction_returns_image();
-        if(image.get()==nullptr){
-            continue_running = false;
-            continue;
-        }
-        curan::utilities::Job job_to_execute;
-	    job_to_execute.description = "Job to execute";
-        job_to_execute.function_to_execute = [image]() {
-            slow_image_filter(image);
-	    };
-        curan::utilities::pool->submit(job_to_execute);
+    {
+        NeedleCalibrationData data{creation_data, Eigen::Matrix<double, 4, 4>::Identity(), 0.0};
+        std::cout << "(original  ) needle calibration data: \n"
+                  << data << std::endl;
+        auto mock_file_in_disk = print_to_file(data);
+        auto copydata = parse_from_file<NeedleCalibrationData>(mock_file_in_disk);
+        std::cout << "(replication) needle calibration data: \n"
+                  << copydata << std::endl;
     }
-    curan::utilities::terminate_thread_pool();
-    return 0;
+
+    {
+        RegistrationData data{creation_data, Eigen::Matrix<double, 4, 4>::Identity(), 0.0, Type::VOLUME};
+        std::cout << "(original  ) registration data: \n"
+                  << data << std::endl;
+        auto mock_file_in_disk = print_to_file(data);
+        auto copydata = parse_from_file<RegistrationData>(mock_file_in_disk);
+        std::cout << "(replication) registration data: \n"
+                  << copydata << std::endl;
+    }
+
+    {
+        TrajectorySpecificationData data{creation_data, Eigen::Matrix<double, 3, 1>::Ones(), Eigen::Matrix<double, 3, 1>::Ones(), Eigen::Matrix<double, 3, 3>::Identity(), "path_to_moving_image"};
+        std::cout << "(original  ) trajectory specification data: \n"
+                  << data << std::endl;
+        auto mock_file_in_disk = print_to_file(data);
+        auto copydata = parse_from_file<TrajectorySpecificationData>(mock_file_in_disk);
+        std::cout << "(replication) trajectory specification data: \n"
+                  << copydata << std::endl;
+    }
 }
 ```
 
-## Flags
-
-The last flag which is notable and usefull in your day to day inside the utilities target are multihtreaded safe flags. So you are in a situation where 
-you want to wait for a boolean variable to turn positive. This waiting can be achieved with a multitude of tecniques. An amatuer implementation of this behavior would be something like
+We start by providing the necessary include directories 
 
 ```cpp
-#include <atomic>
-
-int foo(std::atomic<bool>& variable){
-    //this function does something important that we need to wait on
-    // ...
-
-    variable.store(true);
-}
-
-int main(){
-    std::atomic<bool> flag_to_wait = false;
-    std::thread local_thread(foo(flag_to_wait));
-    //we do something in the mean time while waiting for this task to be over
-    // ...
-
-    //After doing in parallel what we needed to do, we must wait for the variable to be trur
-    while(flag_to_wait.load()) {}; //this loop keeps running until the variable is true
-
-    //now we can execute what needs to be executed because the variable is true
-    // ... 
-    return 0;
-}
+#include <iostream>
+#include "utils/FileStructures.h"
 ```
 
-Notice that this naive implementation wastes alot of cpu cycles because the main thread keeps evaluating the variable, which is wastefull. The behavior we want is to block until the variable is true. Curan does this through the class Flag as follows:
+we also define two helper functions, one that takes an input stream, file, stringstream etc... that is templated for 
+our file encoding types
 
 ```cpp
-#include "utilities/Flag.h"
-
-int foo(std::shared_ptr<curan::utilities::Flag> shared_flag){
-    //this function does something important that we need to wait on
-    // ...
-
-    shared_flag->set();
+template <typename T>
+T parse_from_file(std::istream &instream)
+{
+    T file_encoding{instream};
+    return file_encoding;
 }
 
-int main(){
-    auto flag = curan::utilities::Flag::make_shared_flag();
-    std::thread local_thread(foo(flag));
-    //we do something in the mean time while waiting for this task to be over
-    // ...
-
-    flag->wait();
-    //now we can execute what needs to be executed because the variable is true
-    // ... 
-    return 0;
+std::stringstream print_to_file(auto type)
+{
+    std::stringstream mock_file_in_disk;
+    mock_file_in_disk << type;
+    return mock_file_in_disk;
 }
 ```
 
-Internally this code uses condition variables to force threads to sleep. This saves the CPU of waiting uncessaryly while instead we ask the operating system to wake us up when necessary.
+now we focus on the serialization and deserialization types. Note that these types are supposed to propagate
+data between executables we force data to always be in a consistent state. The data can be created from, from two sources
+from files or from constructors. Any other manipulation is disallowed. Take for example UltrasoundCalibrationData that encodes
+the date at which the ultrasound calibration was created, the calibration matrix (in this case we mock it with an identity matrix)
+and the error of the calibration. Note that the type can be serializated into a std::ostream 
 
-## Memory
+```cpp
+UltrasoundCalibrationData data{creation_data, Eigen::Matrix<double, 4, 4>::Identity(), 0.0};
+std::cout << "(original  ) ultrasound calibration data: \n" << data << std::endl;
+
+```
+
+now we mimic what would happen is a normal executable, where we have created the calibration data and we print it to a file, in this
+case mocked by a std::stringstream.
+
+```cpp
+auto mock_file_in_disk = print_to_file(data);
+
+```
+On another executable we would read this into a istream of some type and recreate UltrasoundCalibrationData. Once 
+its created the structure can no longer be modified
+
+```cpp
+auto copydata = parse_from_file<UltrasoundCalibrationData>(mock_file_in_disk);
+std::cout << "(replication) ultrasound calibration data: \n" << copydata << std::endl;
+```
+
+Note that the same logic applies for the remaining structures. In this case NeedleCalibrationData takes the date at which the needle was calibrated
+the matrix that defines the pose relative to the end-effector of the robot and the calibratione error
+
+```cpp
+NeedleCalibrationData data{creation_data, Eigen::Matrix<double, 4, 4>::Identity(), 0.0};
+```
+
+this case RegistrationData takes the date at which the registration was defined, the transformation from moving to fixed image,
+the registration error and the type of registration used to create the registration type
+
+```cpp
+RegistrationData data{creation_data, Eigen::Matrix<double, 4, 4>::Identity(), 0.0, Type::VOLUME};
+```
+
+this case TrajectorySpecificationData takes the date at which the needle was calibrated
+the vector that defines the target, the entry point and the orientation desired as well as the path to the moving image which is usefull for 
+intraoperative navigation
+
+```cpp
+TrajectorySpecificationData data{creation_data, Eigen::Matrix<double, 3, 1>::Ones(), Eigen::Matrix<double, 3, 1>::Ones(), Eigen::Matrix<double, 3, 3>::Identity(), "path_to_moving_image"};
+```
+
+## Logger
+
+The full source code of the following tutorial is shown next. We will explain line by line what each 
+abstraction does. 
+
+```cpp
+#include <iostream>
+#include "utils/Logger.h"
+
+void logger_tutorial(){
+    using namespace curan::utilities;
+    Logger logger{};
+    print<Severity::info>("data to print to word{0}\n",1);
+    print<Severity::debug>("data to print to word{0}\n",2);
+    print<Severity::major_failure>("data to print to word{0}\n",3);
+    print<Severity::minor_failure>("data to print to word{0}\n",4);
+    print<Severity::warning>("data to print to word{0}\n",5);
+    for(int i = 0; i < 7 && logger; ++i)
+        logger.processing_function();
+}
+```
+
+We start by providing the necessary include directories 
+
+```cpp
+#include <iostream>
+#include "utils/Logger.h"
+```
+
+we also employ the using directive to reduce the typing required 
+
+```cpp
+using namespace curan::utilities;
+```
+
+
+
+## Reader
+
+The full source code of the following tutorial is shown next. We will explain line by line what each 
+abstraction does. 
+
+```cpp
+#include <iostream>
+#include "utils/Reader.h"
+
+void reader_tutorial(){
+    using namespace curan::utilities;
+    char matrix_correct[] = R"(11.14285714 , 12.14285714
+                               13.14285714 , 14.14285714)";
+    std::stringstream datastream;
+    datastream << matrix_correct;
+    Eigen::MatrixXd matrix = convert_matrix(datastream,',');
+    std::cout << "parsed matrix:\n" << matrix << std::endl;
+}
+```
+
+We start by providing the necessary include directories 
+
+```cpp
+#include <iostream>
+#include "utils/TheadPool.h"
+```
+
+we also employ the using directive to reduce the typing required 
+
+```cpp
+using namespace curan::utilities;
+```
+
+```cpp
+
+```
+
+```cpp
+
+```
+
+```cpp
+
+```
+
+```cpp
+
+```
+
+```cpp
+
+```
+
+```cpp
+
+```
+
+## StringManipulation
+
+The full source code of the following tutorial is shown next. We will explain line by line what each 
+abstraction does. 
+
+```cpp
+#include <iostream>
+#include "utils/StringManipulation.h"
+
+void string_manipulation_tutorial(){
+    using namespace curan::utilities;
+    std::cout << "data to output is: " << to_string_with_precision(1324.9123491,1) << std::endl;
+    std::cout << "data to output is: " << to_string_with_precision(1324.9123491,2) << std::endl;
+    std::cout << "data to output is: " << to_string_with_precision(1324.9123491,3) << std::endl;
+    std::cout << "data to output is: " << to_string_with_precision(1324.9123491,4) << std::endl;
+    std::cout << "data to output is: " << to_string_with_precision(1324.9123491,5) << std::endl;
+    std::cout << "data to output is: " << to_string_with_precision(1324.9123491,6) << std::endl;
+}
+```
+
+We start by providing the necessary include directories 
+
+```cpp
+#include <iostream>
+#include "utils/TheadPool.h"
+```
+
+we also employ the using directive to reduce the typing required 
+
+```cpp
+using namespace curan::utilities;
+```
+
+```cpp
+
+```
+
+```cpp
+
+```
+
+```cpp
+
+```
+
+```cpp
+
+```
+
+```cpp
+
+```
+
+```cpp
+
+```

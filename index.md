@@ -6,19 +6,15 @@ layout: page
 permalink: /
 ---
 
-Curan is a medical toolkit written in C++ which simplifies integration with third-party dependecies and provides solutions for your custom medical needs. 
+Curan is a medical toolkit written in C++ that simplifies integration with third-party dependencies and provides solutions for your custom medical needs. The project is developed under the umbrella of [Human Robotics Lab](https://github.com/Human-Robotics-Lab) organization
 
-You can find the source code for Curan at GitHub:
-[Curan](https://github.com/Human-Robotics-Lab/Curan/tree/main)
+You can find the source code for Curan on GitHub:
+[Curan](https://github.com/Joaopmoliveira/CuranSDK)
 
-If you find that you don't have authorization to acess the github repository of Curan, ask one of the maintainers for acess to your personal account.
+Now, let's continue our adventure into programming. This is hopefully a detailed view of how to use and understand the project layout. 
 
-On with our adventure into programming. This is hopefully a detaild view of how to use and understand the project layout. 
+If you want to get started, read the [build instructions]({{ site.baseurl }}/get_started/) on how to compile Curan on your personal machine. Currently, we have only tested Curan on Windows and Ubuntu, although most libraries should work out of the box on macOS.
 
-[Human-Robotics-Lab-organization]: https://github.com/Human-Robotics-Lab
+If you want to see some of the applications we’ve developed with this collection of libraries, please check out some of our work in [the demos folder]({{ site.baseurl }}/demos/).
 
-If you want to start on this path, read the [build intructions]({{ site.baseurl }}/get_started/) on how to compile Curan in your personal machine. Currently we have only tested Curan in Windows and Ubunto, although most libraries should work out of the box in Mac OS. 
-
-If you want to see of of the applications we developed with this collection of libraries, please check out some off our work in [the demos folder]({{ site.baseurl }}/demos/)
-
-If you already have Curan installed in your machine, then take a look at some of the [tutorials]({{ site.baseurl }}/tutorials/) we provide to guide you through the API of Curan. 
+If you already have Curan installed on your machine, take a look at some of the [tutorials]({{ site.baseurl }}/tutorials/) we provide to guide you through the Curan API.

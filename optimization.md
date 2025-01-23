@@ -1,6 +1,8 @@
 ---
+layout: "default"
 permalink : "/optimization/"
 ---
+
 
 ### Optimization
 
