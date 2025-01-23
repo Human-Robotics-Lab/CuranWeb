@@ -24,9 +24,9 @@ This code signals to CMake that our target depends on utils and when we compile 
 * MemoryUtils : [MemoryUtils](#memoryutils)
 * DateManipulation : [DateManipulation](#datemanipulation)
 * FileStructures : [FileStructures](#filestructures)
-* Logger(todo) : [Logger](#Logger)
-* Reader(todo) : [Reader](#Reader)
-* StringManipulation(todo) : [StringManipulation](#StringManipulation)
+* Logger : [Logger](#logger)
+* Reader : [Reader](#reader)
+* StringManipulation : [StringManipulation](#stringmanipulation)
 
 # Tutorials
 
@@ -531,7 +531,7 @@ void logger_tutorial(){
     print<Severity::major_failure>("data to print to word{0}\n",3);
     print<Severity::minor_failure>("data to print to word{0}\n",4);
     print<Severity::warning>("data to print to word{0}\n",5);
-    for(int i = 0; i < 7 && logger; ++i)
+    for(int i = 0; i < 5 && logger; ++i)
         logger.processing_function();
 }
 ```
@@ -549,7 +549,54 @@ we also employ the using directive to reduce the typing required
 using namespace curan::utilities;
 ```
 
+its important that the code is proliferated with comments, because it allows us to query and understand the code 
+at runtime. It is also important that these strings can be turned off or on depending on the criticallity of the code. 
+Usually one could define a macro as such
 
+
+```cpp
+//THIS IS NOT PART OF THE TUTORIAL
+#define PRINT_INFO(x) std::cout << x << std::endl; 
+```
+
+but we avoid this strategy because it is pure text replacement, without string formating options. Instead what we propose
+is a templated print function that depending on the level will compile into a print statement or not. internally a macro is defined, 
+which can be set at the CMake level informing that particlar executable of the severity level that is desired to be printed. Even if 
+we set the print level to the lowest, e.g., print everything, the program will not print to anything because we have not created a logger. 
+
+```cpp
+Logger logger{};
+```
+
+now lets consider the print statements that ensue
+
+```cpp
+print<Severity::info>("data to print to word{0}\n",1);
+print<Severity::debug>("data to print to word{0}\n",2);
+print<Severity::major_failure>("data to print to word{0}\n",3);
+print<Severity::minor_failure>("data to print to word{0}\n",4);
+print<Severity::warning>("data to print to word{0}\n",5); 
+```
+
+if the macro to be defined at the cmake level is CURAN_WARNING_LEVEL major_failure then once compiled the previous statements will compile to
+
+```cpp
+// all other calls are eliminated at compile time
+print<Severity::major_failure>("data to print to word{0}\n",3);
+```
+
+notice that no string allocation stakes place with the previous statements. Once the logger is created, internally a global pointer is filled that informs all compiled print statements of where to print to.
+As soon as this is done, each print statement will lock a mutex of the logger and add this string to the internal list of strings recorded
+in the logger. So far nothing is priting anywhere. The last piece of the puzzle is that *somewhere* in the codebase
+a thread must consume the strings added internally to the queue of strings inside the logger
+
+```cpp
+while(logger)
+    logger.processing_function();
+```
+
+notice that the there is no danger of continually adding too many strings to the queue because internally it contains a maximum upper bound
+that will discard previous strings if achieved
 
 ## Reader
 
@@ -575,7 +622,7 @@ We start by providing the necessary include directories
 
 ```cpp
 #include <iostream>
-#include "utils/TheadPool.h"
+#include "utils/Reader.h"
 ```
 
 we also employ the using directive to reduce the typing required 
@@ -584,28 +631,18 @@ we also employ the using directive to reduce the typing required
 using namespace curan::utilities;
 ```
 
-```cpp
+the following is a simple piece of code, we take a stringstream that is filled with a string representing an array
 
+```cpp
+std::stringstream datastream;
+datastream << matrix_correct;
 ```
 
-```cpp
-
-```
+the function convert matrix takes this stream and an optional argument that defines how are number separated between each other
 
 ```cpp
-
-```
-
-```cpp
-
-```
-
-```cpp
-
-```
-
-```cpp
-
+Eigen::MatrixXd matrix = convert_matrix(datastream,',');
+std::cout << "parsed matrix:\n" << matrix << std::endl;
 ```
 
 ## StringManipulation
@@ -632,7 +669,7 @@ We start by providing the necessary include directories
 
 ```cpp
 #include <iostream>
-#include "utils/TheadPool.h"
+#include "utils/StringManipulation.h"
 ```
 
 we also employ the using directive to reduce the typing required 
@@ -641,26 +678,8 @@ we also employ the using directive to reduce the typing required
 using namespace curan::utilities;
 ```
 
-```cpp
-
-```
+the to_string_with_precision converts a double presentation and prints the number of chars after the comma. This is usefull when we desire consistency while printing data 
 
 ```cpp
-
-```
-
-```cpp
-
-```
-
-```cpp
-
-```
-
-```cpp
-
-```
-
-```cpp
-
+std::cout << "data to output is: " << to_string_with_precision(1324.9123491,1) << std::endl;
 ```
