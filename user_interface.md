@@ -19,9 +19,9 @@ userinterface
 ```
 Now the compiler can link safely to our library. 
 
-* Signal(todo) : [Signal](#signal)
-* SignalProcessor(todo) : [SignalProcessor](#signalprocessor)
-* Empty Canvas(todo) : [Empty Canvas](#empty canvas)
+* Signal: [Signal](#signal)
+* SignalProcessor : [SignalProcessor](#signalprocessor)
+* Empty Canvas : [Empty Canvas](#empty-canvas)
 * Containers and Buttons(todo) : [Containers and Buttons](#containers and buttons)
 * ImageDisplay(todo) : [ImageDisplay](#imagedisplay)
 * ImutableTextPanel(todo) : [ImutableTextPanel](#imutabletextpanel)
@@ -369,13 +369,85 @@ and the actual rectangular region where the widget is drawn. We define these two
   };
 ```
 
-```cpp
-
-```
+to infor the interpreter about a particular signal we call the following
 
 ```cpp
-
+  interpreter.process(check_outer, check_inner,
+                      curan::ui::Move{1, 1});
 ```
+
+note that we employ lambdas instead of requesting the rectangles themselfs because the developer might be interested in defining regions which are non rectangular. 
+Let us focus on the interpreter itself. Note that each widget must have logic associated with its state, e.g., was it visited previously?, these sort of events are 
+recorded unto a size_t where each bit represents a particular event. The interpreter processes the incoming signals and toggles each bit depending on whats appropriate (where the bits are associated with
+the the following enum)
+
+```cpp
+enum InterpreterStatus : size_t
+{
+    MOUSE_CLICKED_LEFT_EVENT = 1 << 1,
+    MOUSE_CLICKED_LEFT = 1 << 2,
+    MOUSE_CLICKED_RIGHT_EVENT = 1 << 3,
+    MOUSE_CLICKED_RIGHT = 1 << 4,
+    MOUSE_UNCLICK_LEFT_EVENT = 1 << 5,
+    MOUSE_UNCLICK_RIGHT_EVENT = 1 << 6,
+    MOUSE_MOVE_EVENT = 1 << 7, // move is always an event
+    SCROLL_EVENT = 1 << 8,     // scroll is always an event
+    OUTSIDE_ALLOCATED_AREA = 1 << 9,
+    INSIDE_ALLOCATED_AREA = 1 << 10,
+    ENTERED_ALLOCATED_AREA_EVENT = 1 << 11,
+    LEFT_ALLOCATED_AREA_EVENT = 1 << 12,
+    OUTSIDE_FIXED_AREA = 1 << 13,
+    INSIDE_FIXED_AREA = 1 << 14,
+    LEFT_FIXED_AREA_EVENT = 1 << 15,
+    ENTERED_FIXED_AREA_EVENT = 1 << 16,
+    ITEM_DROPPED_EVENT = 1 << 17,
+    KEY_EVENT = 1 << 18,
+    HEART_BEAT = 1 << 19
+};
+```
+
+to understand how it work we list a sequence of events that we might be interested in processing. The sequence of events is:
+* 1) move motion located outside
+* 2) a move inside the outer rectangle
+* 3) a move still on top of the outer region
+* 4) a move inside the inner region
+* 5) a move still inside the top region
+* 6) a press event is triggered
+* 7) we move the mouse while pressing it
+* 8) we unpress the mouse
+* 9) then we move the mouse inside the outer region
+* 10) lastly we move completly away both outer and inner region
+
+What do we expected to happen inside the interpreter? Well initially the interpreter in the state of:
+```cpp
+OUTSIDE_FIXED_AREA | OUTSIDE_ALLOCATED_AREA
+```
+that is to say nobody is interacting with the widget. Once a move event is triggered then the state changes to
+
+```cpp
+OUTSIDE_FIXED_AREA | OUTSIDE_ALLOCATED_AREA | MOUSE_MOVE_EVENT
+```
+the following move enters the outside region thus the state changes to
+
+```cpp
+OUTSIDE_FIXED_AREA | INSIDE_ALLOCATED_AREA | MOUSE_MOVE_EVENT | ENTERED_ALLOCATED_AREA_EVENT
+```
+
+note that a couple of things happen, both a one off event, ENTERED_ALLOCATED_AREA_EVENT, and we also trigger the INSIDE_ALLOCATED_AREA.
+Once the mouse is moved still inside the outer region then the one off event is shutdown
+
+```cpp
+OUTSIDE_FIXED_AREA | INSIDE_ALLOCATED_AREA | MOUSE_MOVE_EVENT
+```
+
+the following event enters the inner region thus the state evolves to  
+
+```cpp
+INSIDE_FIXED_AREA | INSIDE_ALLOCATED_AREA | MOUSE_MOVE_EVENT | ENTERED_FIXED_AREA_EVENT
+```
+
+and the following logic remains. Note that to program your widget logic, if you so desire, in then a matter of querying the interpreter
+and react to each event as necessary. 
 
 ## Empty Canvas
 
@@ -422,25 +494,109 @@ void empty_canvas_tutorial() {
 }
 ```
  
-firstly we include the necessary headers 
+firstly we include the necessary headers and define the macro that is used to process jpeg, png images as follows
+
+```cpp
+#define STB_IMAGE_IMPLEMENTATION
+#include "userinterface/Window.h"
+#include <iostream>
+```
+
+note that we are using GPU rendering for most of our tasks. It is still up for debate if we should also deal with rendering without a GPU (SKIA makes this very easy)
+but for the moment, we only render with the GPU. To provide commands to the GPU most libraries require a context that stores vital information for our application.
+Curan is not different, we first allocate a context which is a unique_ptr. This is the case because this way we guarantee that at the end of the program we properly release
+the resources from the GPU 
+
+```cpp
+ std::unique_ptr<Context> context = std::make_unique<Context>();
+```
+
+we then create the display parameters that will be used by the window creation logic, e.g., swapchains among other things
+
+```cpp
+DisplayParams param{std::move(context), 1200, 800};
+std::unique_ptr<Window> viewer = std::make_unique<Window>(std::move(param));
+```
+
+and we also allocate a Window inside a unique_ptr. Now note that the main loop logic is fairly simple. The while loop queries the operating system
+to check if events requesting window termination have been requested. So long as that is not the case, we continue running the rendering logic
 
 ```cpp
 
+while (!glfwWindowShouldClose(viewer->window)) {
+
+  }
+
 ```
+
+Inside the body of the while loop we have a following code
 
 ```cpp
+    auto start = std::chrono::high_resolution_clock::now();
+    SkSurface *pointer_to_surface = viewer->getBackbufferSurface();
+    SkCanvas *canvas = pointer_to_surface->getCanvas();
+    canvas->drawColor(SK_ColorWHITE);
+    SkPoint point{400, 400};
+    canvas->drawCircle(point, 20.0, paint_square);
+    glfwPollEvents();
+    auto signals = viewer->process_pending_signals();
 
+    bool val = viewer->swapBuffers();
+    if (!val)
+      std::cout << "failed to swap buffers\n";
+    auto end = std::chrono::high_resolution_clock::now();
+    std::this_thread::sleep_for(std::chrono::milliseconds(16) -std::chrono::duration_cast<std::chrono::milliseconds>(end - start));
 ```
+
+Lets take a look at the lines of code that guarantee the framerate 
 
 ```cpp
-
+    auto start = std::chrono::high_resolution_clock::now();
+    ...
+    auto end = std::chrono::high_resolution_clock::now();
+    std::this_thread::sleep_for(std::chrono::milliseconds(16) -std::chrono::duration_cast<std::chrono::milliseconds>(end - start));
 ```
+
+We record when we started rendering and loop back until the moment we stoped rendering. Once this happens, we sleep for an amount of time that 
+is equivalent to 60 Hz. Now let us understand the remaining code. When dealing with GPUs we always have to deal with swapchains. This means that 
+instead of telling the screen to draw each individual text or shape we create a memory region with the same size (not mandatory) as the physican screen
+we render into this memory regions, and then this entire blob is sent through SPI to to physical screen. To speed up the rendering pipeline, usually we create
+multiple regions of memory and while we are drawing into one regions, we are already sending the previous regions. This increases throughput. Thus the code
+queries the window for a new blob of memory unto which we can render and then we push to information unto the physical screen. 
 
 ```cpp
-
+    SkSurface *pointer_to_surface = viewer->getBackbufferSurface();
+    ...
+    bool val = viewer->swapBuffers();
+    if (!val)
+      std::cout << "failed to swap buffers\n";
 ```
 
-## Containers  and Buttons
+Each surface (memory region) has an abstraction that records drawing primitives, an SkCanvas, to which we draw into in a loop. Effectivelly what our wrapper does on 
+top of SKIA is basically formalize coordinate computations, among other details. 
+
+```cpp
+    SkCanvas *canvas = pointer_to_surface->getCanvas();
+    canvas->drawColor(SK_ColorWHITE);
+    SkPoint point{400, 400};
+    canvas->drawCircle(point, 20.0, paint_square);
+```
+
+Lastly we query the operating system for events and then we request a vector with all events previously recorded. 
+
+```cpp
+    glfwPollEvents();
+    auto signals = viewer->process_pending_signals();
+```
+
+because the canvas is empty we do nothing with these signals. But note that when used in conjunction with widgets, the interpreters come into play and process the vectors of signals respectivelly.
+We prefer to be explicit while processing these details because then it becomes clear how the rendering pipeline actually works. 
+
+## Containers and Buttons
+
+> **Note**
+> This tutorial prints sizes of widgets and containers so that the reader can understand how things inside Curan are done. Nevertheless this code is never executed, everything is propagated 
+> internally so that the user does not have to do this work manually. 
 
 The full source code of the following tutorial is shown next. We will explain line by line what each 
 abstraction does. 
@@ -537,6 +693,7 @@ void buttons_and_containers_tutorial() {
                 << " right: " << rec.fRight << " bottom: " << rec.fBottom
                 << "\n";
   }
+
   {
     button_ptr button, button2, button3;
     create_buttons_for_demo(button, button2, button3, resources);
@@ -554,6 +711,7 @@ void buttons_and_containers_tutorial() {
                 << " right: " << rec.fRight << " bottom: " << rec.fBottom
                 << "\n";
   }
+
   {
     button_ptr button, button2, button3;
     create_buttons_for_demo(button, button2, button3, resources);
@@ -632,19 +790,180 @@ void buttons_and_containers_tutorial() {
 firstly we include the necessary headers 
 
 ```cpp
+#include "userinterface/widgets/Button.h"
+#include "userinterface/widgets/Container.h"
+```
+
+now its time to dig in and look at the code. Although this tutorial is quite long, most of the logic is easy to grasp once you get the fundamental concepts.
+There are two fundamental players that we most consider, widgets and containers, i.e., there are branches (containers), that can either contain other containers or 
+widgets, and leafs (widgets) that are the final element in each branch of a three. For this tutorial there are two utility functions that create buttons (a kind of widget).
+
+
+```cpp
+void create_buttons_for_demo(button_ptr &button, button_ptr &button2,
+                             button_ptr &button3,
+                             curan::ui::IconResources &resources);
+
+void create_buttons_for_demo(button_ptr &button, button_ptr &button2,
+                             button_ptr &button3, button_ptr &button4,
+                             curan::ui::IconResources &resources);
+```
+
+now lets look at a concrete example of how we can use containers. The IconResources is the manager of images recored in the directory used by Curan. Whenver a widget wishes to use any such image, 
+this usually contain a IconResources reference.
+
+```cpp
+ using namespace curan::ui;
+  IconResources resources{CURAN_COPIED_RESOURCE_PATH "/images"};
 
 ```
 
-```cpp
+now we create three button that we wish to place side by side where 33% of the space inside the container is reserved for each button
 
+![side by side]({{ site.baseurl }}/assets/images/horizontal_containers.png)
+
+we can do so in code throught the following
+
+```cpp
+  {
+    button_ptr button, button2, button3;
+    create_buttons_for_demo(button, button2, button3, resources);
+    container_ptr container = Container::make(Container::ContainerType::LINEAR_CONTAINER,Container::Arrangement::HORIZONTAL);
+    *container << std::move(button) << std::move(button2) << std::move(button3);
+  }
 ```
 
-```cpp
+notice that we move the widgets inside the containers. This implies that their lifetime is directly connected to the lifetime of the container.  Consider that we instead wished to reserve 10% 
+of space for the first widget, 40% for the second and 50% for the last widget. This can be achieved through 
 
+```cpp
+  container->set_divisions({0.0f, 0.1f, 0.5f, 1.0f}); // optional line
 ```
 
+Consider that instead of an horizontal spacing, we prefer a vertical spacing side by side 
+
+![side by side]({{ site.baseurl }}/assets/images/vertical_containers.png)
+
+we can do so in code throught the following
+
 ```cpp
 
+  {
+    button_ptr button, button2, button3;
+    create_buttons_for_demo(button, button2, button3, resources);
+    container_ptr container =
+        Container::make(Container::ContainerType::LINEAR_CONTAINER,
+                        Container::Arrangement::VERTICAL);
+    *container << std::move(button) << std::move(button2) << std::move(button3);
+  }
+```
+
+note that sometimes we require customization over exactly where we wish to place each widget. 
+
+![side by side]({{ site.baseurl }}/assets/images/variable_containers.png)
+
+this can be achieved in code through the following snipit of code
+
+```cpp
+{
+    button_ptr button, button2, button3;
+    create_buttons_for_demo(button, button2, button3, resources);
+    container_ptr container =
+        Container::make(Container::ContainerType::VARIABLE_CONTAINER,
+                        Container::Arrangement::UNDEFINED);
+    *container << std::move(button) << std::move(button2) << std::move(button3);
+    container->set_variable_layout(
+        {SkRect::MakeLTRB(0.4f, 0.0f, 0.3333f, 0.8f),
+         SkRect::MakeLTRB(0.2f, 0.3333f, 0.6666f, 0.6f),
+         SkRect::MakeLTRB(0.4f, 0.6666f, 1.0f, 0.8f)});
+  }
+```
+
+Note that in previous snipits of code we queried the container for the relative sizes of each widget inside the container. Note that at some point, we need to know which 
+is the absolute position of the widgets on screen. This is achieved by providing the container with its own position on screen and calling framebuffer_size() which 
+propagates the relative poses of each widget inside the container. This is demonstrated in the following code snippet. 
+
+```cpp
+ {
+    button_ptr button, button2, button3;
+    create_buttons_for_demo(button, button2, button3, resources);
+    Button *ptr_to_button = button.get();
+    Button *ptr_to_button2 = button2.get();
+    Button *ptr_to_button3 = button3.get();
+
+    container_ptr container =
+        Container::make(Container::ContainerType::LINEAR_CONTAINER,
+                        Container::Arrangement::HORIZONTAL);
+    *container << std::move(button) << std::move(button2) << std::move(button3);
+    container->set_divisions({0.0, 0.33333, 0.66666, 1.0});
+    container->compile();
+
+    SkRect my_small_window = SkRect::MakeLTRB(50, 50, 950, 950);
+    container->set_position(my_small_window);
+    container->framebuffer_resize(my_small_window);
+    auto pos1 = ptr_to_button->get_position();
+    std::cout << "Button1 left: " << pos1.fLeft << " top: " << pos1.fTop
+              << " right: " << pos1.fRight << " bottom: " << pos1.fBottom
+              << "\n";
+    auto pos2 = ptr_to_button2->get_position();
+    std::cout << "Button2 left: " << pos2.fLeft << " top: " << pos2.fTop
+              << " right: " << pos2.fRight << " bottom: " << pos2.fBottom
+              << "\n";
+    auto pos3 = ptr_to_button3->get_position();
+    std::cout << "Button3 left: " << pos3.fLeft << " top: " << pos3.fTop
+              << " right: " << pos3.fRight << " bottom: " << pos3.fBottom
+              << "\n";
+  }
+```
+
+The last imporant concept is that containers can be composed with each other. So image that you want four buttons in total. Three of these buttons should be 
+stacked on top of each other and ocupy 50% of the screen horizontally, while the remaining button should ocupy the remaining space, as shown in the following figure. 
+![side by side]({{ site.baseurl }}/assets/images/composed_containers.png)
+
+this can be achieved through the following code snippit
+
+```cpp
+{
+    button_ptr button, button2, button3, button4;
+    create_buttons_for_demo(button, button2, button3, button4, resources);
+    Button *ptr_to_button = button.get();
+    Button *ptr_to_button2 = button2.get();
+    Button *ptr_to_button3 = button3.get();
+    Button *ptr_to_button4 = button4.get();
+    container_ptr container =
+        Container::make(Container::ContainerType::LINEAR_CONTAINER,
+                        Container::Arrangement::VERTICAL);
+    *container << std::move(button) << std::move(button2) << std::move(button3);
+    container->set_divisions({0.0f, 0.33333f, 0.66666f, 1.0f});
+
+    container_ptr container2 =
+        Container::make(Container::ContainerType::LINEAR_CONTAINER,
+                        Container::Arrangement::HORIZONTAL);
+    *container2 << std::move(container) << std::move(button4);
+    container2->set_divisions({0.0f, 0.5f, 1.0f});
+
+    SkRect my_small_window = SkRect::MakeLTRB(50, 50, 950, 950);
+    container2->set_position(my_small_window);
+    container2->compile();
+    container2->framebuffer_resize(my_small_window);
+
+    auto pos1 = ptr_to_button->get_position();
+    std::cout << "Button1 left: " << pos1.fLeft << " top: " << pos1.fTop
+              << " right: " << pos1.fRight << " bottom: " << pos1.fBottom
+              << "\n";
+    auto pos2 = ptr_to_button2->get_position();
+    std::cout << "Button2 left: " << pos2.fLeft << " top: " << pos2.fTop
+              << " right: " << pos2.fRight << " bottom: " << pos2.fBottom
+              << "\n";
+    auto pos3 = ptr_to_button3->get_position();
+    std::cout << "Button3 left: " << pos3.fLeft << " top: " << pos3.fTop
+              << " right: " << pos3.fRight << " bottom: " << pos3.fBottom
+              << "\n";
+    auto pos4 = ptr_to_button4->get_position();
+    std::cout << "Button3 left: " << pos4.fLeft << " top: " << pos4.fTop
+              << " right: " << pos4.fRight << " bottom: " << pos4.fBottom
+              << "\n";
+  }
 ```
 
 ## ImageDisplay
@@ -682,7 +1001,7 @@ void image_display_tutorial() {
   using namespace curan::ui;
   using namespace curan::utilities;
   std::unique_ptr<Context> context = std::make_unique<Context>();
-  ;
+
   DisplayParams param{std::move(context), 600, 600};
   std::unique_ptr<Window> viewer = std::make_unique<Window>(std::move(param));
   std::unique_ptr<ImageDisplay> image_display = ImageDisplay::make();
@@ -740,21 +1059,88 @@ void image_display_tutorial() {
 firstly we include the necessary headers 
 
 ```cpp
-
+#define STB_IMAGE_IMPLEMENTATION
+#include "userinterface/Window.h"
+#include "userinterface/widgets/ConfigDraw.h"
+#include "userinterface/widgets/IconResources.h"
+#include "userinterface/widgets/ImageDisplay.h"
+#include "userinterface/widgets/Page.h"
+#include "utils/TheadPool.h"
+#include <iostream>
 ```
 
-```cpp
+next we define a function that takes a raw pointer to an image display, a width and height and generates a random image which is then added to the screen. 
 
+```cpp
+void update_image_display(curan::ui::ImageDisplay *image_display,
+                          size_t image_width, size_t image_height);
 ```
 
-```cpp
+Internally we allocate a piece of memory, fill it with random data, create a capture buffer that takes ownership of this data and then we create an image wrapper.
+An image wrapper basically passes along information regarding pixel size, dimensions, etc, of the owned piece of memory. We then update the image_display with this data.
 
+```cpp
+  using namespace curan::ui;
+  using namespace curan::utilities;
+
+  auto raw_data =
+      std::make_shared<std::vector<uint8_t>>(image_width * image_height, 0);
+  for (auto &dat : *raw_data.get())
+    dat = rand();
+  image_display->update_image(ImageWrapper{
+      CaptureBuffer::make_shared(raw_data->data(),
+                                 raw_data->size() * sizeof(uint8_t), raw_data),
+      image_width, image_height});
 ```
 
-```cpp
+now back to the UI portion of this tutorial. Firstly we create a context and a window that we can manipulate
 
+```cpp
+using namespace curan::ui;
+using namespace curan::utilities;
+std::unique_ptr<Context> context = std::make_unique<Context>();
+
+DisplayParams param{std::move(context), 600, 600};
+std::unique_ptr<Window> viewer = std::make_unique<Window>(std::move(param));
+```
+
+with the window and context created we create a container 
+
+```cpp
+std::unique_ptr<ImageDisplay> image_display = ImageDisplay::make();
+ImageDisplay *pointer_to = image_display.get();
+auto container = Container::make(Container::ContainerType::LINEAR_CONTAINER,
+                                   Container::Arrangement::HORIZONTAL);
+*container << std::move(image_display);
 ```
  
+```cpp
+  curan::ui::Page page{std::move(container), SK_ColorBLACK};
+  page.update_page(viewer.get());
+```
+
+```cpp
+std::atomic<bool> running = true;
+
+auto pool = ThreadPool::create(1);
+pool->submit("image display updater", [&]() {
+    size_t image_width = 50;
+    size_t image_height = 50;
+    double timer = 0.0;
+    while (running) {
+      update_image_display(pointer_to, image_width + 20 * std::sin(timer),
+                           image_height + 20 * std::cos(timer));
+      std::this_thread::sleep_for(std::chrono::milliseconds(20));
+      timer += std::chrono::milliseconds(20).count() * 1e-3;
+  }
+});
+```
+
+```cpp
+...
+running = false;
+```
+
 ## ImutableTextPanel
 
 The full source code of the following tutorial is shown next. We will explain line by line what each 
@@ -786,7 +1172,6 @@ void imutable_text_panel_tutorial() {
   auto container = Container::make(Container::ContainerType::LINEAR_CONTAINER,
                                    Container::Arrangement::VERTICAL);
   layer->setFont(ImutableTextPanel::typeface::sans_serif);
-  ImutableTextPanel *layer_ptr = layer.get();
   *container << std::move(layer);
 
   curan::ui::Page page{std::move(container), SK_ColorBLACK};
@@ -822,18 +1207,31 @@ void imutable_text_panel_tutorial() {
 firstly we include the necessary headers 
 
 ```cpp
-
+#define STB_IMAGE_IMPLEMENTATION
+#include "userinterface/Window.h"
+#include "userinterface/widgets/ConfigDraw.h"
+#include "userinterface/widgets/Container.h"
+#include "userinterface/widgets/IconResources.h"
+#include "userinterface/widgets/ImutableTextPanel.h"
+#include "userinterface/widgets/Page.h"
+#include "utils/TheadPool.h"
+#include <iostream>
 ```
 
-```cpp
-
-```
-
-```cpp
-
-```
+Now we create the ImutableTextPanel with a default text. Note that imutable actually does not mean that it can't change, it just means that it can't be edited by the 
+user whilst the program runs, but through our code, we can modify it at will. 
 
 ```cpp
+std::unique_ptr<ImutableTextPanel> layer =
+      ImutableTextPanel::make("write for life");
+  layer->set_background_color({1.f, 1.0f, 1.0f, 1.0f})
+      .set_text_color({.0f, .0f, .0f, 1.0f});
+  auto container = Container::make(Container::ContainerType::LINEAR_CONTAINER,
+                                   Container::Arrangement::VERTICAL);
+  layer->setFont(ImutableTextPanel::typeface::sans_serif);
+  *container << std::move(layer);
+
+  curan::ui::Page page{std::move(container), SK_ColorBLACK};
 
 ```
  
@@ -858,7 +1256,7 @@ void item_explorer_tutorial() {
   using namespace curan::utilities;
   IconResources resources{CURAN_COPIED_RESOURCE_PATH "/images"};
   std::unique_ptr<Context> context = std::make_unique<Context>();
-  ;
+
   DisplayParams param{std::move(context), 1200, 800};
   std::unique_ptr<Window> viewer = std::make_unique<Window>(std::move(param));
 
@@ -948,22 +1346,70 @@ void item_explorer_tutorial() {
 firstly we include the necessary headers 
 
 ```cpp
+std::shared_ptr<std::array<unsigned char, 100 * 100>> image_buffer =
+      std::make_shared<std::array<unsigned char, 100 * 100>>();
+  constexpr float maximum_size = 2 * 50.0 * 50.0;
+  for (size_t row = 0; row < 100; ++row)
+    for (size_t col = 0; col < 100; ++col)
+      (*image_buffer)[row + col * 100] = static_cast<unsigned char>(
+          (((row - 50.0) * (row - 50.0) + (col - 50.0) * (col - 50.0)) /
+           maximum_size) *
+          255.0);
+
+  auto buff = CaptureBuffer::make_shared(
+      image_buffer->data(), image_buffer->size() * sizeof(unsigned char),
+      image_buffer);
 
 ```
 
 ```cpp
+std::map<int, std::string> items_to_add;
+  items_to_add.emplace(0, "zero");
+  items_to_add.emplace(1, "one");
+  items_to_add.emplace(2, "two");
+  items_to_add.emplace(3, "three");
+  items_to_add.emplace(4, "four");
+  items_to_add.emplace(5, "five");
+  items_to_add.emplace(6, "six");
+  items_to_add.emplace(7, "seven");
+  items_to_add.emplace(8, "eight");
+  items_to_add.emplace(9, "nine");
+  items_to_add.emplace(10, "ten");
+  items_to_add.emplace(11, "eleven");
+  items_to_add.emplace(12, "twelve");
+  items_to_add.emplace(13, "thirteen");
+```
+
+```cpp
+auto item_explorer = ItemExplorer::make("file_icon.png", resources);
+  auto ptr_item_explorer = item_explorer.get();
+
+  std::atomic<bool> running = true;
+
+  auto pool = ThreadPool::create(1);
+  pool->submit("data injector and remover", [&]() {
+    for (size_t i = 0; i < 14; ++i) {
+      ptr_item_explorer->add(Item{i, items_to_add.at(i), buff, 100, 100});
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+
+    for (size_t i = 0; i < 14; ++i) {
+      ptr_item_explorer->remove(i);
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+  });
 
 ```
 
 ```cpp
+  auto container = Container::make(Container::ContainerType::LINEAR_CONTAINER,
+                                   Container::Arrangement::VERTICAL);
+  *container << std::move(item_explorer);
 
-```
-
-```cpp
-
+  curan::ui::Page page{std::move(container), SK_ColorBLACK};
 ```
  
-## Loader
+## Loader and Overlays
 
 The full source code of the following tutorial is shown next. We will explain line by line what each 
 abstraction does. 
@@ -1142,7 +1588,18 @@ void loader_tutorial() {
 firstly we include the necessary headers 
 
 ```cpp
+#define STB_IMAGE_IMPLEMENTATION
+#include "userinterface/Window.h"
+#include "userinterface/widgets/Button.h"
+#include "userinterface/widgets/ConfigDraw.h"
+#include "userinterface/widgets/Container.h"
+#include "userinterface/widgets/IconResources.h"
+#include "userinterface/widgets/Loader.h"
+#include "userinterface/widgets/Overlay.h"
+#include "userinterface/widgets/Page.h"
+#include "utils/Logger.h"
 
+#include <iostream>
 ```
 
 ```cpp
