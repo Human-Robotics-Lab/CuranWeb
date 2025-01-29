@@ -22,9 +22,10 @@ Now the compiler can link safely to our library.
 * Signal: [Signal](#signal)
 * SignalProcessor : [SignalProcessor](#signalprocessor)
 * Empty Canvas : [Empty Canvas](#empty-canvas)
-* Containers and Buttons(todo) : [Containers and Buttons](#containers and buttons)
-* ImageDisplay(todo) : [ImageDisplay](#imagedisplay)
-* ImutableTextPanel(todo) : [ImutableTextPanel](#imutabletextpanel)
+* Containers and Buttons : [Containers and Buttons](#containers-and-buttons)
+* Render Containers with Pages : [Render Containers with Pages](#render-containers-with-pages)
+* ImageDisplay : [ImageDisplay](#imagedisplay)
+* ImutableTextPanel : [ImutableTextPanel](#imutabletextpanel)
 * ItemExplorer(todo) : [ItemExplorer](#itemexplorer)
 * Loader(todo) : [Loader](#loader) 
 * MiniPage(todo) : [MiniPage](#minipage)
@@ -852,6 +853,175 @@ this can be achieved through the following code snippit
   }
 ```
 
+## Render Containers with Pages
+
+The full source code of the following tutorial is shown next. We will explain line by line what each 
+abstraction does. 
+
+```cpp
+#define STB_IMAGE_IMPLEMENTATION
+#include "userinterface/Window.h"
+#include "userinterface/widgets/ConfigDraw.h"
+#include "userinterface/widgets/IconResources.h"
+#include "userinterface/widgets/Page.h"
+#include "userinterface/widgets/Button.h"
+#include "userinterface/widgets/Container.h"
+#include <iostream>
+
+void containers_and_pages(){
+  using namespace curan::ui;
+  IconResources resources{CURAN_COPIED_RESOURCE_PATH "/images"};
+  std::unique_ptr<Context> context = std::make_unique<Context>();
+  DisplayParams param{std::move(context), 600, 600};
+  std::unique_ptr<Window> viewer = std::make_unique<Window>(std::move(param));
+  auto button = Button::make("Touch!", resources);
+  button->set_click_color(SK_ColorRED)
+      .set_hover_color(SK_ColorCYAN)
+      .set_waiting_color(SK_ColorGRAY)
+      .set_size(SkRect::MakeWH(100, 200));
+
+  auto button2 = Button::make("Touch2!", resources);
+  button2->set_click_color(SK_ColorRED)
+      .set_hover_color(SK_ColorCYAN)
+      .set_waiting_color(SK_ColorGRAY)
+      .set_size(SkRect::MakeWH(100, 200));
+
+  auto button3 = Button::make("Touch3!", resources);
+  button3->set_click_color(SK_ColorRED)
+      .set_hover_color(SK_ColorCYAN)
+      .set_waiting_color(SK_ColorGRAY)
+      .set_size(SkRect::MakeWH(100, 200));
+
+  auto container = Container::make(Container::ContainerType::LINEAR_CONTAINER,Container::Arrangement::HORIZONTAL);
+  *container << std::move(button) << std::move(button2) << std::move(button3);
+
+  curan::ui::Page page{std::move(container), SK_ColorBLACK};
+  page.update_page(viewer.get());
+  ConfigDraw config{&page};
+
+  while (!glfwWindowShouldClose(viewer->window)) {
+    auto start = std::chrono::high_resolution_clock::now();
+    SkSurface *pointer_to_surface = viewer->getBackbufferSurface();
+    SkCanvas *canvas = pointer_to_surface->getCanvas();
+    if (viewer->was_updated()) {
+      page.update_page(viewer.get());
+      viewer->update_processed();
+    }
+    page.draw(canvas);
+    auto signals = viewer->process_pending_signals();
+    if (!signals.empty())
+      page.propagate_signal(signals.back(), &config);
+    glfwPollEvents();
+
+    bool val = viewer->swapBuffers();
+    if (!val)
+      std::cout << "failed to swap buffers\n";
+    auto end = std::chrono::high_resolution_clock::now();
+    std::this_thread::sleep_for(
+        std::chrono::milliseconds(16) -
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - start));
+  }
+  return;
+}
+```
+firstly we include the necessary headers 
+
+```cpp
+#define STB_IMAGE_IMPLEMENTATION
+#include "userinterface/Window.h"
+#include "userinterface/widgets/ConfigDraw.h"
+#include "userinterface/widgets/IconResources.h"
+#include "userinterface/widgets/Page.h"
+#include "userinterface/widgets/Button.h"
+#include "userinterface/widgets/Container.h"
+#include <iostream>
+```
+
+as previously, we create a context to communicate with the GPU and we create a window to render our widgets to
+
+```cpp
+  using namespace curan::ui;
+  IconResources resources{CURAN_COPIED_RESOURCE_PATH "/images"};
+  std::unique_ptr<Context> context = std::make_unique<Context>();
+  DisplayParams param{std::move(context), 600, 600};
+  std::unique_ptr<Window> viewer = std::make_unique<Window>(std::move(param));
+```
+
+Once our window is up and running, we can create three buttons, where we parameterize their colors once click, while the mouse houvers
+over them and their size inside their respective container
+
+```cpp
+  auto button = Button::make("Touch!", resources);
+  button->set_click_color(SK_ColorRED)
+      .set_hover_color(SK_ColorCYAN)
+      .set_waiting_color(SK_ColorGRAY)
+      .set_size(SkRect::MakeWH(100, 200));
+
+  auto button2 = Button::make("Touch2!", resources);
+  button2->set_click_color(SK_ColorRED)
+      .set_hover_color(SK_ColorCYAN)
+      .set_waiting_color(SK_ColorGRAY)
+      .set_size(SkRect::MakeWH(100, 200));
+
+  auto button3 = Button::make("Touch3!", resources);
+  button3->set_click_color(SK_ColorRED)
+      .set_hover_color(SK_ColorCYAN)
+      .set_waiting_color(SK_ColorGRAY)
+      .set_size(SkRect::MakeWH(100, 200));
+```
+
+as demonstrated in a previous tutorial, we follow up with the creation of a linear horizontal container that will allocate the 33% of horizontal space for each 
+widget
+
+```cpp
+auto container = Container::make(Container::ContainerType::LINEAR_CONTAINER,Container::Arrangement::HORIZONTAL);
+  *container << std::move(button) << std::move(button2) << std::move(button3);
+```
+
+now comes the interesting part, for the container to be aware of the size of the window, we need a connection between the two. This is the purpose of the page, it propagates 
+changes in size of the viewer and controls the lifetime of each widget on screen. Once the page destructor is deleted, so are all the widgets contained inside it.
+
+```cpp
+  curan::ui::Page page{std::move(container), SK_ColorBLACK};
+  page.update_page(viewer.get());
+  ConfigDraw config{&page};
+```
+
+inside the rendering loop of the page we first check if the window changed sizes, if it did then we propagate this change throughout the widgets contained
+inside it. 
+
+```cpp
+...
+    if (viewer->was_updated()) {
+      page.update_page(viewer.get());
+      viewer->update_processed();
+    }
+...
+```
+
+once this change in size is propagated we draw the page unto the canvas and process the signals inside it. Notice that the process_pending_signals() function call returns a vector with 
+all the signals that were not processed so far (deleting them from the queue of signals to process). In this particular tutorial we choose to only propagate the last signal (thus the back call)
+
+```cpp
+...
+    page.draw(canvas);
+    auto signals = viewer->process_pending_signals();
+    if (!signals.empty())
+      page.propagate_signal(signals.back(), &config);
+
+```
+
+although we could choose to propagate all the signals received so far as so
+
+```cpp
+...
+    page.draw(canvas);
+    auto signals = viewer->process_pending_signals();
+    for(auto sig : signals)
+      page.propagate_signal(sig, &config);
+
+```
+
 ## ImageDisplay
 
 The full source code of the following tutorial is shown next. We will explain line by line what each 
@@ -979,7 +1149,7 @@ An image wrapper basically passes along information regarding pixel size, dimens
       image_width, image_height});
 ```
 
-now back to the UI portion of this tutorial. Firstly we create a context and a window that we can manipulate
+now back to the UI portion of this tutorial. Firstly we create a context and a window as in previous tutorials 
 
 ```cpp
 using namespace curan::ui;
@@ -990,7 +1160,7 @@ DisplayParams param{std::move(context), 600, 600};
 std::unique_ptr<Window> viewer = std::make_unique<Window>(std::move(param));
 ```
 
-with the window and context created we create a container 
+with the window and context created we create a container and its corresponding page
 
 ```cpp
 std::unique_ptr<ImageDisplay> image_display = ImageDisplay::make();
@@ -998,12 +1168,11 @@ ImageDisplay *pointer_to = image_display.get();
 auto container = Container::make(Container::ContainerType::LINEAR_CONTAINER,
                                    Container::Arrangement::HORIZONTAL);
 *container << std::move(image_display);
-```
- 
-```cpp
   curan::ui::Page page{std::move(container), SK_ColorBLACK};
   page.update_page(viewer.get());
 ```
+
+next we submit a job to a thread pool that constantly updates the image that we wish to render unto the ImageDisplay. The thread runs for as long as the boolean flag running evaluates to true
 
 ```cpp
 std::atomic<bool> running = true;
@@ -1021,6 +1190,8 @@ pool->submit("image display updater", [&]() {
   }
 });
 ```
+
+once the program terminates we set the running flag to false and wait for the thread pool to join all threads that are currently running
 
 ```cpp
 ...
@@ -1105,15 +1276,13 @@ firstly we include the necessary headers
 ```
 
 Now we create the ImutableTextPanel with a default text. Note that imutable actually does not mean that it can't change, it just means that it can't be edited by the 
-user whilst the program runs, but through our code, we can modify it at will. 
+user whilst the program runs, but through our code, we can modify it at will. As with previous tutorials, as soon as we create the necessary page the text will be rendered on screen. 
 
 ```cpp
-std::unique_ptr<ImutableTextPanel> layer =
-      ImutableTextPanel::make("write for life");
+std::unique_ptr<ImutableTextPanel> layer = ImutableTextPanel::make("write for life");
   layer->set_background_color({1.f, 1.0f, 1.0f, 1.0f})
       .set_text_color({.0f, .0f, .0f, 1.0f});
-  auto container = Container::make(Container::ContainerType::LINEAR_CONTAINER,
-                                   Container::Arrangement::VERTICAL);
+  auto container = Container::make(Container::ContainerType::LINEAR_CONTAINER, Container::Arrangement::VERTICAL);
   layer->setFont(ImutableTextPanel::typeface::sans_serif);
   *container << std::move(layer);
 
@@ -1229,7 +1398,20 @@ void item_explorer_tutorial() {
 }
 ```
 
-firstly we include the necessary headers 
+```cpp
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "userinterface/Window.h"
+#include "userinterface/widgets/ConfigDraw.h"
+#include "userinterface/widgets/Container.h"
+#include "userinterface/widgets/IconResources.h"
+#include "userinterface/widgets/ItemExplorer.h"
+#include "userinterface/widgets/Page.h"
+#include <iostream>
+```
+
+then we create the icon image that we wish to associated with each item in the ItemExplorer. This is important for the user experience, e.g., to qucikly identify 
+which item is which, although a text representation is also supplied to the box. 
 
 ```cpp
 std::shared_ptr<std::array<unsigned char, 100 * 100>> image_buffer =
@@ -1247,6 +1429,9 @@ std::shared_ptr<std::array<unsigned char, 100 * 100>> image_buffer =
       image_buffer);
 
 ```
+
+now we allocate unto a map the names of the items we wish to push unto the ItemExplorer, internally the ItemExplorer always appends an identifier to each item, so that we can choose which
+item to delete. 
 
 ```cpp
 std::map<int, std::string> items_to_add;
@@ -1266,14 +1451,17 @@ std::map<int, std::string> items_to_add;
   items_to_add.emplace(13, "thirteen");
 ```
 
+with the proper arrangements done we create the item explorer and store a pointer to it (at this point you should ask yourself why is this necessary? because the unique_ptr is stored inside the contanier, thus once moved it becomes empty, thus we instead obtain the raw pointer that is inside the unique pointer which is valid even when the unique pointer is moved)
+because we want to demonstrate the item explorer moving and changing, we then launch a thread pool where we asyncronously add and remove elements to it. 
+
 ```cpp
 auto item_explorer = ItemExplorer::make("file_icon.png", resources);
-  auto ptr_item_explorer = item_explorer.get();
+auto ptr_item_explorer = item_explorer.get();
 
-  std::atomic<bool> running = true;
+std::atomic<bool> running = true;
 
-  auto pool = ThreadPool::create(1);
-  pool->submit("data injector and remover", [&]() {
+auto pool = ThreadPool::create(1);
+pool->submit("data injector and remover", [&]() {
     for (size_t i = 0; i < 14; ++i) {
       ptr_item_explorer->add(Item{i, items_to_add.at(i), buff, 100, 100});
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -1283,9 +1471,11 @@ auto item_explorer = ItemExplorer::make("file_icon.png", resources);
       ptr_item_explorer->remove(i);
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
-  });
+});
 
 ```
+
+with the thread pool lauched we then allocate the container and create its page
 
 ```cpp
   auto container = Container::make(Container::ContainerType::LINEAR_CONTAINER,
@@ -1470,7 +1660,8 @@ void loader_tutorial() {
   }
 }
 ```
- 
+
+Before being scared, note that most of the tutorial is simple. 
 firstly we include the necessary headers 
 
 ```cpp
