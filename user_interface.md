@@ -48,185 +48,85 @@ void signal_tutorial() {
   using namespace curan::utilities;
   {
     Signal sig{Empty{}};
-    std::visit(overloaded{[&](Empty arg) {
-                            std::printf("empty is contained inside signal\n");
-                          },
-                          [&](Move arg) {
-
-                          },
-                          [&](Press arg) {
-
-                          },
-                          [&](Scroll arg) {
-
-                          },
-                          [&](Unpress arg) {
-
-                          },
-                          [&](Key arg) {
-
-                          },
-                          [&](ItemDropped arg) {
-
-                          }},
+    std::visit(overloaded{[&](Empty arg) { std::printf("empty is contained inside signal\n");},
+                          [&](Move arg) {},
+                          [&](Press arg) {},
+                          [&](Scroll arg) {},
+                          [&](Unpress arg) {},
+                          [&](Key arg) {},
+                          [&](ItemDropped arg) {}},
                sig);
   }
 
   {
     Signal sig{ItemDropped{2, {"path/to/file", {"path/to/file2"}}}};
-    std::visit(overloaded{[&](Empty arg) {
-
-                          },
-                          [&](Move arg) {
-
-                          },
-                          [&](Press arg) {
-
-                          },
-                          [&](Scroll arg) {
-
-                          },
-                          [&](Unpress arg) {
-
-                          },
-                          [&](Key arg) {
-
-                          },
-                          [&](ItemDropped arg) {
-                            std::printf(
-                                "item dropped is contained inside signal\n");
-                          }},
+    std::visit(overloaded{[&](Empty arg) {},
+                          [&](Move arg) {},
+                          [&](Press arg) {},
+                          [&](Scroll arg) {},
+                          [&](Unpress arg) {},
+                          [&](Key arg) {},
+                          [&](ItemDropped arg) {std::printf("item dropped is contained inside signal\n");}},
                sig);
   }
 
   {
     Signal sig{Key{GLFW_KEY_E, glfwGetKeyScancode(GLFW_KEY_E), GLFW_PRESS, 0}};
-    std::visit(overloaded{[&](Empty arg) {
-
-                          },
-                          [&](Move arg) {
-
-                          },
-                          [&](Press arg) {
-
-                          },
-                          [&](Scroll arg) {
-
-                          },
-                          [&](Unpress arg) {
-
-                          },
-                          [&](Key arg) {
-                            std::printf(
-                                "key pressed is contained inside signal\n");
-                          },
-                          [&](ItemDropped arg) {
-
-                          }},
+    std::visit(overloaded{[&](Empty arg) {},
+                          [&](Move arg) {},
+                          [&](Press arg) {},
+                          [&](Scroll arg) {},
+                          [&](Unpress arg) {},
+                          [&](Key arg) {std::printf("key pressed is contained inside signal\n");},
+                          [&](ItemDropped arg) {}},
                sig);
   }
 
   {
     Signal sig{Move{400, 300}};
-    std::visit(overloaded{[&](Empty arg) {
-
-                          },
-                          [&](Move arg) {
-                            std::printf("move is contained inside signal\n");
-                          },
-                          [&](Press arg) {
-
-                          },
-                          [&](Scroll arg) {
-
-                          },
-                          [&](Unpress arg) {
-
-                          },
-                          [&](Key arg) {
-
-                          },
-                          [&](ItemDropped arg) {
-
-                          }},
+    std::visit(overloaded{[&](Empty arg) {},
+                          [&](Move arg) {std::printf("move is contained inside signal\n");},
+                          [&](Press arg) {},
+                          [&](Scroll arg) {},
+                          [&](Unpress arg) {},
+                          [&](Key arg) {},
+                          [&](ItemDropped arg) {}},
                sig);
   }
 
   {
     Signal sig{Press{400, 300}};
-    std::visit(overloaded{[&](Empty arg) {
-
-                          },
-                          [&](Move arg) {
-
-                          },
-                          [&](Press arg) {
-                            std::printf("press is contained inside signal\n");
-                          },
-                          [&](Scroll arg) {
-
-                          },
-                          [&](Unpress arg) {
-
-                          },
-                          [&](Key arg) {
-
-                          },
-                          [&](ItemDropped arg) {
-
-                          }},
+    std::visit(overloaded{[&](Empty arg) {},
+                          [&](Move arg) {},
+                          [&](Press arg) {std::printf("press is contained inside signal\n");},
+                          [&](Scroll arg) {},
+                          [&](Unpress arg) {},
+                          [&](Key arg) {},
+                          [&](ItemDropped arg) {}},
                sig);
   }
 
   {
     Signal sig{Scroll{400, 300, 10, 10}};
-    std::visit(overloaded{[&](Empty arg) {
-
-                          },
-                          [&](Move arg) {
-
-                          },
-                          [&](Press arg) {
-
-                          },
-                          [&](Scroll arg) {
-                            std::printf("scroll is contained inside signal\n");
-                          },
-                          [&](Unpress arg) {
-
-                          },
-                          [&](Key arg) {
-
-                          },
-                          [&](ItemDropped arg) {
-
-                          }},
+    std::visit(overloaded{[&](Empty arg) {},
+                          [&](Move arg) {},
+                          [&](Press arg) {},
+                          [&](Scroll arg) {std::printf("scroll is contained inside signal\n");},
+                          [&](Unpress arg) {},
+                          [&](Key arg) {},
+                          [&](ItemDropped arg) {}},
                sig);
   }
 
   {
     Signal sig{Unpress{400, 300}};
-    std::visit(overloaded{[&](Empty arg) {
-
-                          },
-                          [&](Move arg) {
-
-                          },
-                          [&](Press arg) {
-
-                          },
-                          [&](Scroll arg) {
-
-                          },
-                          [&](Unpress arg) {
-                            std::printf("unpress is contained inside signal\n");
-                          },
-                          [&](Key arg) {
-
-                          },
-                          [&](ItemDropped arg) {
-
-                          }},
+    std::visit(overloaded{[&](Empty arg) {},
+                          [&](Move arg) {},
+                          [&](Press arg) {},
+                          [&](Scroll arg) {},
+                          [&](Unpress arg) {std::printf("unpress is contained inside signal\n");},
+                          [&](Key arg) {},
+                          [&](ItemDropped arg) {}},
                sig);
   }
 }
@@ -246,27 +146,13 @@ processed variant as so
 
 ```cpp
     Signal sig{Empty{}};
-    std::visit(overloaded{[&](Empty arg) {
-                            std::printf("empty is contained inside signal\n");
-                          },
-                          [&](Move arg) {
-
-                          },
-                          [&](Press arg) {
-
-                          },
-                          [&](Scroll arg) {
-
-                          },
-                          [&](Unpress arg) {
-
-                          },
-                          [&](Key arg) {
-
-                          },
-                          [&](ItemDropped arg) {
-
-                          }},
+    std::visit(overloaded{[&](Empty arg) {std::printf("empty is contained inside signal\n");},
+                          [&](Move arg) {},
+                          [&](Press arg) {},
+                          [&](Scroll arg) {},
+                          [&](Unpress arg) {},
+                          [&](Key arg) {},
+                          [&](ItemDropped arg) {}},
                sig);
 ```
 
