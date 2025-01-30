@@ -26,8 +26,8 @@ Now the compiler can link safely to our library.
 * Render Containers with Pages : [Render Containers with Pages](#render-containers-with-pages)
 * ImageDisplay : [ImageDisplay](#imagedisplay)
 * ImutableTextPanel : [ImutableTextPanel](#imutabletextpanel)
-* ItemExplorer(todo) : [ItemExplorer](#itemexplorer)
-* Loader(todo) : [Loader](#loader) 
+* ItemExplorer : [ItemExplorer](#itemexplorer)
+* Loader and Overlays : [Loader](#loader-and-overlays) 
 * MiniPage(todo) : [MiniPage](#minipage)
 * MutatingTextPanel(todo) : [MutatingTextPanel](#mutatingtextpanel)
 * OpenIGTLinkViewer(todo) : [OpenIGTLinkViewer](#openigtlinkviewer)
@@ -380,8 +380,13 @@ void empty_canvas_tutorial() {
   return;
 }
 ```
+
+> [!OUTPUT]
+> the following shows what you would expect with the previous code listing
+> ![side by side]({{ site.baseurl }}/assets/images/empty_canvas_result.png)
+
  
-firstly we include the necessary headers and define the macro that is used to process jpeg, png images as follows
+...firstly we include the necessary headers and define the macro that is used to process jpeg, png images as follows
 
 ```cpp
 #define STB_IMAGE_IMPLEMENTATION
@@ -1112,6 +1117,11 @@ void image_display_tutorial() {
 }
 ```
 
+> [!OUTPUT]
+> the following shows what you would expect with the previous code listing
+> ![side by side]({{ site.baseurl }}/assets/images/image_display_result.png)
+
+
 firstly we include the necessary headers 
 
 ```cpp
@@ -1261,6 +1271,11 @@ void imutable_text_panel_tutorial() {
 }
 ```
 
+> [!OUTPUT]
+> the following shows what you would expect with the previous code listing
+> ![side by side]({{ site.baseurl }}/assets/images/imutable_text_result.png)
+
+
 firstly we include the necessary headers 
 
 ```cpp
@@ -1398,6 +1413,13 @@ void item_explorer_tutorial() {
 }
 ```
 
+> [!OUTPUT]
+> the following shows what you would expect with the previous code listing
+> ![side by side]({{ site.baseurl }}/assets/images/item_explorer_result.png)
+
+
+firstly we include the necessary headers 
+
 ```cpp
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -1430,8 +1452,8 @@ std::shared_ptr<std::array<unsigned char, 100 * 100>> image_buffer =
 
 ```
 
-now we allocate unto a map the names of the items we wish to push unto the ItemExplorer, internally the ItemExplorer always appends an identifier to each item, so that we can choose which
-item to delete. 
+now we allocate unto a map the names of the items we wish to push unto the ItemExplorer, (internally the ItemExplorer always appends an identifier to each item, so that we can choose which
+item to delete at a later point in time) 
 
 ```cpp
 std::map<int, std::string> items_to_add;
@@ -1502,12 +1524,9 @@ abstraction does.
 #include "userinterface/widgets/Overlay.h"
 #include "userinterface/widgets/Page.h"
 #include "utils/Logger.h"
-
 #include <iostream>
 
-std::unique_ptr<curan::ui::Overlay>
-warning_overlay(const std::string &warning,
-                curan::ui::IconResources &resources) {
+std::unique_ptr<curan::ui::Overlay> warning_overlay(const std::string &warning,curan::ui::IconResources &resources) {
   using namespace curan::ui;
   auto warn = Button::make(" ", "warning.png", resources);
   warn->set_click_color(SK_AlphaTRANSPARENT)
@@ -1521,9 +1540,7 @@ warning_overlay(const std::string &warning,
       .set_waiting_color(SK_AlphaTRANSPARENT)
       .set_size(SkRect::MakeWH(200, 50));
 
-  auto viwers_container =
-      Container::make(Container::ContainerType::LINEAR_CONTAINER,
-                      Container::Arrangement::VERTICAL);
+  auto viwers_container = Container::make(Container::ContainerType::LINEAR_CONTAINER,Container::Arrangement::VERTICAL);
   *viwers_container << std::move(warn) << std::move(button);
   viwers_container->set_color(SK_ColorTRANSPARENT)
       .set_divisions({0.0, .8, 1.0});
@@ -1536,7 +1553,7 @@ void loader_tutorial() {
   using namespace curan::ui;
   IconResources resources{CURAN_COPIED_RESOURCE_PATH "/images"};
   std::unique_ptr<Context> context = std::make_unique<Context>();
-  ;
+
   DisplayParams param{std::move(context), 2200, 1800};
   std::unique_ptr<Window> viewer = std::make_unique<Window>(std::move(param));
 
@@ -1661,6 +1678,11 @@ void loader_tutorial() {
 }
 ```
 
+> [!OUTPUT]
+> the following shows what you would expect with the previous code listing
+> ![side by side]({{ site.baseurl }}/assets/images/loader_result.png)
+
+
 Before being scared, note that most of the tutorial is simple. 
 firstly we include the necessary headers 
 
@@ -1680,7 +1702,7 @@ firstly we include the necessary headers
 ```
 
 ```cpp
-
+std::unique_ptr<curan::ui::Overlay> warning_overlay(const std::string &warning,curan::ui::IconResources &resources)
 ```
 
 ```cpp
