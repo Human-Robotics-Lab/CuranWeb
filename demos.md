@@ -114,18 +114,20 @@ Two main reasons for this, first because its fun, second because it gives you so
 
 Once you launch the executable the application starts with a default box as shown in the following Figure
 
-![roi_specification_begin]({{ site.baseurl }}/assets/images/roi_specification_begin.PNG) 
+<div>
+<video muted autoplay  width="700" controls>
+    <source src="{{ site.baseurl }}/assets/videos/reconstruction_wires.mov" type="video/mp4">
+    <p>Your browser does not support the video element.</p>
+</video>
+</div>
+
 
 once you signal the program, through the command line, 
 that you want to start collecting poses of the ultrasound image which defines your region of interest you will see this box collapse around the ultrasound image in its current configuration
 
-![roi_specification_box0]({{ site.baseurl }}/assets/images/roi_specification_box0.PNG) 
 
 as you impose motion on the robotic system the code computes the convex hull of all the points previously recorded in the ultrasound images and then, 
 with a smaller subset of points, computes the minimum bounding box which contains these points
-
-![roi_specification_box1]({{ site.baseurl }}/assets/images/roi_specification_box1.PNG) 
-![roi_specification_box2]({{ site.baseurl }}/assets/images/roi_specification_box2.PNG) 
 
 this guarantees two things, you are using the all your memory in this region of interest to record the phenomena that is of interest, and the algorithm can keep up in real time with your motion. 
 
