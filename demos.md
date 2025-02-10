@@ -26,11 +26,19 @@ where Base if the name of the frame of reference of the world frame, as conventi
 The integer represents the delay between each image which is broadcasted to the outside world. 
 Make sure this delay is large enough to give time to the Plus Server to process the previous combination of Image+RobotPose before sending a new pose. 
 
-
+![side by side]({{ site.baseurl }}/assets/images/state_machine.png)
 
 # Calibrate the Ultrasound 
 
 > warning: **To run this application you should start the FRIPlusBridge described in the previous section**
+
+<div>
+<video muted autoplay  width="700" controls>
+    <source src="{{ site.baseurl }}/assets/videos/UltrasoundVideo.mov" type="video/mp4">
+    <p>Your browser does not support the video element.</p>
+</video>
+</div>
+
 
 Calibration algorithms are an important part of any system, which can either make or break the system. 
 We developed our own calibration algorithm that takes the pose of the flange of the robot and with any phantom, 

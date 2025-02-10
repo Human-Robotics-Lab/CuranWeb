@@ -40,9 +40,9 @@ the overlap metric.
 
 To guarantee that the code can be executed in realtime we use a multithreaded implementation 
 
-> [!Render Time - US image size]
-> render times as a function of width of US scan and number of threads
-> ![side by side]({{ site.baseurl }}/assets/images/render_times.png)
+[!Render Time - US image size]
+render times as a function of width of US scan and number of threads
+![side by side]({{ site.baseurl }}/assets/images/render_times.png)
 
 To guarantee that the medical team can interpret the quality of the reconstructed volume we render its whilst the cranium is reconstructed
 
