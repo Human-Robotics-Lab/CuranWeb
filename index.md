@@ -19,6 +19,18 @@ If you want to see some of the applications we’ve developed with this collecti
 
 If you already have Curan installed on your machine, take a look at some of the [tutorials]({{ site.baseurl }}/tutorials/) we provide to guide you through the Curan API. Here are some videos of what the sofware allows you to build:
 
+# Trajectory Planning
+
+Medical teams utilize a broad range of planning algorithms that automatically fuse multiple image modalities, and simplify visualization of targeted anatomies.
+Curan ships its own path planner, where we utilize volume rendering techniques to facilitate and streamline the planning task for end-users.
+
+<div>
+<video muted autoplay  width="700" controls>
+    <source src="{{ site.baseurl }}/assets/videos/VolumePlanning.mov" type="video/mp4">
+    <p>Your browser does not support the video element.</p>
+</video>
+</div>
+
 # Spatial calibration with untracked phantoms
 
 For our navigation platform its important that we are able to systematically calibrate the ultrasound-based system without expensive optical trackers. Through
