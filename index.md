@@ -31,6 +31,7 @@ Curan ships its own path planner, where we utilize volume rendering techniques t
 </video>
 </div>
 
+
 # Spatial calibration with untracked phantoms
 
 For our navigation platform its important that we are able to systematically calibrate the ultrasound-based system without expensive optical trackers. Through
@@ -43,6 +44,7 @@ of the robot.
     <p>Your browser does not support the video element.</p>
 </video>
 </div>
+
 
 # Volume reconstruction in real-time
 
@@ -60,7 +62,7 @@ To guarantee that the medical team can interpret the quality of the reconstructe
 
 <div>
 <video muted autoplay  width="700" controls>
-    <source src="{{ site.baseurl }}/assets/videos/volume_reconstruction_wires.mov" type="video/mp4">
+    <source src="{{ site.baseurl }}/assets/videos/volrecons.mov" type="video/mp4">
     <p>Your browser does not support the video element.</p>
 </video>
 </div>
